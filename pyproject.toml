@@ -36,7 +36,7 @@ name = "authcaptureproxy"
 # not all tools are compatible with it, so avoid it if you can.
 version = "0.1.0"
 
-description = "A Python project to create a proxy to capture authentication information from a webpage. This is useful to capture oauth login details without access a third-party oauth."
+description = "A Python project to create a proxy to capture authentication information from a webpage. This is useful to capture oauth login details without access to a third-party oauth."
 keywords = [""]
 authors = ["Alan D. Tse"]
 maintainers = ["Alan D. Tse"]
