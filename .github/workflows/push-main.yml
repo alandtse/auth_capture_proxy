@@ -31,7 +31,8 @@ jobs:
         run: |
           pip install coveralls
           coveralls
-
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   release:
     needs: build
     # https://github.community/t/how-do-i-specify-job-dependency-running-in-another-workflow/16482
