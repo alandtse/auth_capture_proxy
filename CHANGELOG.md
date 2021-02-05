@@ -1,11 +1,15 @@
 # Changelog for auth_capture_proxy
 
-Adheres to [Semantic Versioning 2.0](https://semver.org/spec/v2.0.0.html),
-[Keep a Changelog 1.0](https://keepachangelog.com/en/1.0.0/),
-and [Conventional Commits 1.0](https://www.conventionalcommits.org/en/v1.0.0/).
+<!--next-version-placeholder-->
 
-## [0.1.0] - 2021-02-03
+## v0.1.2 (2021-02-04)
 
-### Added:
+### Fix
 
-- Stub files.
+- Add support for python 3.7 (95a7d33e3d32ea6447be157c66fc9e130ae0e4e2)
+
+## v0.1.1 (2021-02-04)
+
+### Feat
+
+- Initial release
