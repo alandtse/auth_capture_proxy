@@ -5,10 +5,15 @@ Metadata for this auth_capture_proxy.
 import logging
 from typing import Sequence
 
+try:
+    from importlib_metadata import PackageNotFoundError
+    from importlib_metadata import metadata as __load
+except ModuleNotFoundError:
+    from importlib.metadata import PackageNotFoundError
+    from importlib.metadata import metadata as __load
+
 # If you need to support Python 3.7, change to importlib_metadata (underscore, not dot)
 # and then list importlib_metadata to [tool.poetry.dependencies] and docs/requirements.txt
-from importlib.metadata import PackageNotFoundError
-from importlib.metadata import metadata as __load
 from pathlib import Path
 from .auth_capture_proxy import AuthCaptureProxy
 
