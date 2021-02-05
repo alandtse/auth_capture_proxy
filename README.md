@@ -2,11 +2,9 @@
 
 [![Version status](https://img.shields.io/pypi/status/authcaptureproxy)](https://pypi.org/project/authcaptureproxy)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
-[![Python version compatibility](https://img.shields.io/pypi/pyversions/auth_capture_proxy)](https://pypi.org/project/auth_capture_proxy)
-[![Version on Docker Hub](https://img.shields.io/docker/v/alandtse/auth_capture_proxy?color=green&label=Docker%20Hub)](https://hub.docker.com/repository/docker/alandtse/auth_capture_proxy)
+[![Python version compatibility](https://img.shields.io/pypi/pyversions/auth_capture_proxy)](https://pypi.org/project/authcaptureproxy)
 [![Version on Github](https://img.shields.io/github/v/release/alandtse/auth_capture_proxy?include_prereleases&label=GitHub)](https://github.com/alandtse/auth_capture_proxy/releases)
 [![Version on PyPi](https://img.shields.io/pypi/v/authcaptureproxy)](https://pypi.org/project/authcaptureproxy)
-[![Version on Conda-Forge](https://img.shields.io/conda/vn/conda-forge/auth_capture_proxy?label=Conda-Forge)](https://anaconda.org/conda-forge/auth_capture_proxy)
 [![Documentation status](https://readthedocs.org/projects/auth_capture_proxy/badge)](https://auth_capture_proxy.readthedocs.io/en/stable)
 [![Build (Github Actions)](https://img.shields.io/github/workflow/status/alandtse/auth_capture_proxy/Build%20&%20test?label=Build%20&%20test)](https://github.com/alandtse/auth_capture_proxy/actions)
 [![Test coverage (coveralls)](https://coveralls.io/repos/github/alandtse/auth_capture_proxy/badge.svg?branch=main&service=github)](https://coveralls.io/github/alandtse/auth_capture_proxy?branch=main)
