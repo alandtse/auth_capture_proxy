@@ -15,7 +15,9 @@ And it’s further described in this paragraph.
 [See the docs 📚](https://auth-capture-proxy.readthedocs.io/en/latest/) for more info.
 
 Licensed under the terms of the [Apache License 2.0](https://spdx.org/licenses/Apache-2.0.html).
+
 [New issues](https://github.com/alandtse/auth_capture_proxy/issues) and pull requests are welcome.
 Please refer to the [contributing guide](https://github.com/alandtse/auth_capture_proxy/blob/main/CONTRIBUTING.md)
 and [security policy](https://github.com/alandtse/auth_capture_proxy/blob/main/SECURITY.md).
+
 Generated with [Tyrannosaurus](https://github.com/dmyersturnbull/tyrannosaurus).
