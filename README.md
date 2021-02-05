@@ -2,7 +2,7 @@
 
 [![Version status](https://img.shields.io/pypi/status/authcaptureproxy)](https://pypi.org/project/authcaptureproxy)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
-[![Python version compatibility](https://img.shields.io/pypi/pyversions/auth_capture_proxy)](https://pypi.org/project/authcaptureproxy)
+[![Python version compatibility](https://img.shields.io/pypi/pyversions/authcaptureproxy)](https://pypi.org/project/authcaptureproxy)
 [![Version on Github](https://img.shields.io/github/v/release/alandtse/auth_capture_proxy?include_prereleases&label=GitHub)](https://github.com/alandtse/auth_capture_proxy/releases)
 [![Version on PyPi](https://img.shields.io/pypi/v/authcaptureproxy)](https://pypi.org/project/authcaptureproxy)
 [![Documentation status](https://readthedocs.org/projects/auth_capture_proxy/badge)](https://auth_capture_proxy.readthedocs.io/en/stable)
