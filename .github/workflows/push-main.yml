@@ -27,12 +27,8 @@ jobs:
       - name: Test with tox
         run: |
           tox -v
-      - name: Update coveralls
-        env:
-          GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
-        run: |
-          pip install coveralls
-          coveralls || true
+      - name: Coveralls GitHub Action
+        uses: coverallsapp/github-action@v1.1.2
   release:
     needs: build
     # https://github.community/t/how-do-i-specify-job-dependency-running-in-another-workflow/16482
