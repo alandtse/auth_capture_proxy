@@ -12,6 +12,21 @@
 A Python project to create a proxy to capture authentication information from a webpage. This is useful to capture oauth login details without access to a third-party oauth.
 
 And it’s further described in this paragraph.
+
+## Install
+
+```bash
+pip install authcaptureproxy
+```
+
+## Using
+
+To see basic usage look at the [proxy-example](authcaptureproxy/cli.py) that logs into Amazon.com and will print out the detected email and password.
+
+```bash
+python authcaptureproxy/cli.py proxy-example
+```
+
 [See the docs 📚](https://auth-capture-proxy.readthedocs.io/en/latest/) for more info.
 
 Licensed under the terms of the [Apache License 2.0](https://spdx.org/licenses/Apache-2.0.html).
