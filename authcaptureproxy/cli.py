@@ -6,15 +6,17 @@ Command-line interface for auth_capture_proxy.
 from __future__ import annotations
 
 import asyncio
-from yarl import URL
-from functools import wraps
 import logging
 import time
+from functools import partial, wraps
+from typing import Any, Dict, Optional, Text
 
 import typer
+from aiohttp import ClientResponse
+from yarl import URL
 
-from authcaptureproxy import __title__, __version__, __copyright__, AuthCaptureProxy, metadata
-
+from authcaptureproxy import AuthCaptureProxy, __copyright__, __title__, __version__, metadata
+from authcaptureproxy.examples.modifiers import autofill
 
 logger = logging.getLogger(__package__)
 cli = typer.Typer()
@@ -74,7 +76,17 @@ async def proxy_example(
         callback_url = URL(callback)
     proxy = AuthCaptureProxy(proxy_url=proxy_url, host_url=host_url)
 
-    def test_url(resp, data, query):
+    def test_url(resp: ClientResponse, data: Dict[Text, Any], query: Dict[Text, Any]):
+        """Test for a successful Amazon URL.
+
+        Args:
+            resp (ClientResponse): The aiohttp response.
+            data (Dict[Text, Any]): Dictionary of all post data captured through proxy with overwrites for duplicate keys.
+            query (Dict[Text, Any]): Dictionary of all query data with overwrites for duplicate keys.
+
+        Returns:
+            Optional[Union[URL, Text]]: URL for a http 302 redirect or Text to display on success. None indicates test did not pass.
+        """
         # Did we reach specific url?
         typer.echo(f"URL {resp.url}")
         if str(resp.url) == "https://www.amazon.com/?ref_=nav_signin&":
@@ -85,11 +97,18 @@ async def proxy_example(
                 return URL(callback_url)  # 302 redirect
             return f"Successfully logged in {data.get('email')} and {data.get('password')}. Please close the window."
 
-    # add test or tests
+    # add tests. See :mod:`authcaptureproxy.examples.testers`.
     proxy.tests = {"test_url": test_url}
 
-    # add modifiers like autofill to manipulate returned html
-    proxy.modifiers = {}
+    # add modifiers like autofill to manipulate html returned to browser. See :mod:`authcaptureproxy.examples.modifiers`.
+    proxy.modifiers = {
+        "autofill": partial(
+            autofill,
+            {
+                "password": "CHANGEME",
+            },
+        )
+    }
 
     await proxy.start_proxy()
     # connect to proxy at proxy.access_url and sign in
