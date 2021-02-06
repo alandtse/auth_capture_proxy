@@ -4,7 +4,7 @@ import logging
 from typing import Any, Callable, Dict, Optional, Text
 
 import asyncio
-from aiohttp import web, ClientSession, ClientConnectionError
+from aiohttp import web, ClientSession, ClientConnectionError, TooManyRedirects
 from aiohttp.client_reqrep import ClientResponse
 import multidict
 from ssl import SSLContext
@@ -135,6 +135,8 @@ class AuthCaptureProxy:
                     resp = await getattr(self.session, method)(site, headers=headers)
             except ClientConnectionError as ex:
                 return web.Response(text=f"Error connecting to {site}; please retry: {ex}")
+            except TooManyRedirects as ex:
+                return web.Response(text=f"Error connecting to {site}; too may redirects: {ex}")
         if resp is None:
             return web.Response(text=f"Error connecting to {site}; please retry")
         self.last_resp = resp
