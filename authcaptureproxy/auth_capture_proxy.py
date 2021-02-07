@@ -43,6 +43,23 @@ class AuthCaptureProxy:
         self.data: Dict[Text, Any] = {}
         self._tests: Dict[Text, Callable] = {}
         self._modifiers: Dict[Text, Callable] = {}
+        self._active = False
+        self._all_handler_active = True
+
+    @property
+    def active(self) -> bool:
+        """Return whether proxy is started."""
+        return self._active
+
+    @property
+    def all_handler_active(self) -> bool:
+        """Return whether all handler is active."""
+        return self._all_handler_active
+
+    @all_handler_active.setter
+    def all_handler_active(self, value: bool) -> None:
+        """Set all handler to value."""
+        self._all_handler_active = value
 
     @property
     def port(self) -> int:
@@ -90,7 +107,7 @@ class AuthCaptureProxy:
     async def all_handler(self, request: web.Request, **kwargs) -> web.Response:
         """Handle all requests.
 
-        This handler will exit on succesful test found in self.tests or if a /stop url is seen. This handler can be used with any aiohttp webserver.
+        This handler will exit on succesful test found in self.tests or if a /stop url is seen. This handler can be used with any aiohttp webserver and disabled after registered using self.all_handler_active.
 
         Args
             request (web.Request): The request to process
@@ -100,9 +117,14 @@ class AuthCaptureProxy:
 
         Raises
             web.HTTPFound: Redirect URL upon success
+            web.HTTPNotFound: Return 404 when all_handler is disabled
 
         """
-
+        if not self.all_handler_active:
+            _LOGGER.debug("%s all_handler is disabled; returning 404.", self)
+            raise web.HTTPNotFound()
+        if not self.session:
+            self.session = ClientSession()
         method = request.method.lower()
         resp: Optional[ClientResponse] = None
         site = URL(self._swap_proxy_and_host(str(request.url)))
@@ -221,6 +243,7 @@ class AuthCaptureProxy:
             self._proxy_url = self._proxy_url.with_scheme("http")
         site = web.TCPSite(runner=self.runner, host=host, port=self.port, ssl_context=ssl_context)
         await site.start()
+        self._active = True
         _LOGGER.debug("Started proxy at %s", self.access_url())
 
     async def stop_proxy(self, delay: int = 0) -> None:
@@ -229,6 +252,9 @@ class AuthCaptureProxy:
         Args:
             delay (int, optional): How many seconds to delay. Defaults to 0.
         """
+        if not self.active:
+            _LOGGER.debug("Proxy is not started; ignoring stop command")
+            return
         _LOGGER.debug("Stopping proxy at %s after %s seconds", self.access_url(), delay)
         await asyncio.sleep(delay)
         await self.runner.cleanup()
