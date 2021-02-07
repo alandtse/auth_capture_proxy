@@ -87,7 +87,7 @@ class AuthCaptureProxy:
         """Return access url for proxy with port."""
         return self._proxy_url.with_port(self.port)
 
-    async def all_handler(self, request: web.Request) -> web.Response:
+    async def all_handler(self, request: web.Request, **kwargs) -> web.Response:
         """Handle all requests.
 
         This handler will exit on succesful test found in self.tests or if a /stop url is seen. This handler can be used with any aiohttp webserver.
