@@ -100,6 +100,24 @@ class AuthCaptureProxy:
         """
         self._modifiers = value
 
+    async def reset_data(self) -> None:
+        """Reset all stored data.
+
+        A proxy may need to service multiple login requests if the route is not torn down. This function will reset all data between logins.
+        """
+        if self.session and not self.session.closed:
+            if self.session._connector_owner and self.session._connector:
+                await self.session._connector.close()
+            self.session._connector = None
+        self.session = ClientSession()
+        self.last_resp = None
+        self.init_query = {}
+        self.query = {}
+        self.data = {}
+        self._active = False
+        self._all_handler_active = True
+        _LOGGER.debug("Proxy data reset.")
+
     def access_url(self) -> URL:
         """Return access url for proxy with port."""
         return self._proxy_url.with_port(self.port)
