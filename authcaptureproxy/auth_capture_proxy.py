@@ -291,18 +291,21 @@ class AuthCaptureProxy:
         await self.runner.cleanup()
         await self.runner.shutdown()
 
-    def _swap_proxy_and_host(self, text: Text) -> Text:
+    def _swap_proxy_and_host(self, text: Text, domain_only: bool = False) -> Text:
         """Replace host with proxy address or proxy with host address
 
         Args
             text (Text): text to replace
+            domain (bool): Whether only the domains should be swapped.
 
         Returns
             Text: Result of replacing
 
         """
         host_string: Text = str(self._host_url.with_path("/"))
-        proxy_string: Text = str(self.access_url())
+        proxy_string: Text = str(
+            self.access_url() if not domain_only else self.access_url().with_path("/")
+        )
         if not proxy_string or proxy_string == "/" or proxy_string[-1] != "/":
             proxy_string = f"{proxy_string}/"
         if proxy_string in text:
@@ -330,6 +333,6 @@ class AuthCaptureProxy:
             # Remove referer for starting request; this may have query items we shouldn't pass
             result.pop("Referer")
         elif result.get("Referer"):
-            result["Referer"] = self._swap_proxy_and_host(result.get("Referer"))
+            result["Referer"] = self._swap_proxy_and_host(result.get("Referer"), domain_only=True)
         # _LOGGER.debug("Final headers %s", result)
         return result
