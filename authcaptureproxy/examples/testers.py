@@ -16,7 +16,6 @@ def test_amazon(
 ) -> Optional[Union[URL, Text]]:
     """Test Amazon login example.
 
-    This must be a synchronous function.
     This is a simplifed example based on alexapy. https://gitlab.com/keatontaylor/alexapy/-/blob/dev/alexapy/alexaproxy.py
 
     Args:

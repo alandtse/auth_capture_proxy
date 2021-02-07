@@ -53,7 +53,7 @@ class AuthCaptureProxy:
     def tests(self) -> Dict[Text, Callable]:
         """Return tests setting.
 
-        :setter: value (Dict[Text, Any]): A dictionary of tests. The key should be the name of the test and the value should be a synchronous function that takes a ClientResponse, a dictionary of post variables, and a dictioary of query variables and returns a URL or string. See :mod:`authcaptureproxy.examples.testers` for examples.
+        :setter: value (Dict[Text, Any]): A dictionary of tests. The key should be the name of the test and the value should be a function or coroutine that takes a ClientResponse, a dictionary of post variables, and a dictioary of query variables and returns a URL or string. See :mod:`authcaptureproxy.examples.testers` for examples.
         """
         return self._tests
 
@@ -70,7 +70,7 @@ class AuthCaptureProxy:
     def modifiers(self) -> Dict[Text, Callable]:
         """Return modifiers setting.
 
-        :setter: value (Dict[Text, Any]): A dictionary of modifiers. The key should be the name of the modifier and the value should be a synchronous function that takes a string and returns a modified string. If parameters are necessary, functools.partial should be used. See :mod:`authcaptureproxy.examples.modifiers` for examples.
+        :setter: value (Dict[Text, Any]): A dictionary of modifiers. The key should be the name of the modifier and the value should be a function or couroutine that takes a string and returns a modified string. If parameters are necessary, functools.partial should be used. See :mod:`authcaptureproxy.examples.modifiers` for examples.
         """
         return self._modifiers
 
@@ -143,7 +143,13 @@ class AuthCaptureProxy:
         print_resp(resp)
         if self.tests:
             for test_name, test in self.tests.items():
-                result = test(resp, self.data, self.query)
+                result = None
+                if asyncio.iscoroutinefunction(test):
+                    _LOGGER.debug("Running coroutine test %s", test_name)
+                    result = await test(resp, self.data, self.query)
+                else:
+                    _LOGGER.debug("Running function test %s", test_name)
+                    result = test(resp, self.data, self.query)
                 if result:
                     _LOGGER.debug("Test %s reports success", test_name)
                     if isinstance(result, URL):
@@ -165,8 +171,12 @@ class AuthCaptureProxy:
             text = self._change_host_to_proxy(await resp.text())
             if self.modifiers:
                 for name, modifier in self.modifiers.items():
-                    _LOGGER.debug("Applied modifier: %s", name)
-                    text = modifier(text)
+                    if asyncio.iscoroutinefunction(modifier):
+                        _LOGGER.debug("Applied coroutine modifier: %s", name)
+                        text = await modifier(text)
+                    else:
+                        _LOGGER.debug("Applied function modifier: %s", name)
+                        text = modifier(text)
             return web.Response(
                 text=text,
                 content_type=content_type,
