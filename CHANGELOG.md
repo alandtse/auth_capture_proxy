@@ -2,6 +2,10 @@
 
 <!--next-version-placeholder-->
 
+## v0.3.0 (2021-02-07)
+### Feature
+* Add change_host_url ([`fe6226e`](https://github.com/alandtse/auth_capture_proxy/commit/fe6226ee9cc9f6a1aecf6cf84e963ab6ad8470c7))
+
 ## v0.2.0 (2021-02-06)
 ### Feature
 * Add modifiers to cli example ([`eae4030`](https://github.com/alandtse/auth_capture_proxy/commit/eae4030ba4f47468563e1abdaa186ed221eeb42d))
