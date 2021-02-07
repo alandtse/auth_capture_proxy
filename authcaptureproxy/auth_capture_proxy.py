@@ -105,21 +105,33 @@ class AuthCaptureProxy:
 
         method = request.method.lower()
         resp: Optional[ClientResponse] = None
-        site = URL(self._change_proxy_to_host(str(request.url)))
+        site = URL(self._swap_proxy_and_host(str(request.url)))
         _LOGGER.debug("%s: %s", method, request.url)
         self.query.update(request.query)
         data = await request.post()
         if data:
             self.data.update(await request.post())
-        if request.url.path == f"{self._proxy_url.path}stop":
-            asyncio.create_task(self.stop_proxy(3))
+        if request.url.path in [
+            f"{self._proxy_url.path}stop",
+            f"{self._proxy_url.path}/stop",
+        ]:
+            self.all_handler_active = False
+            if self.active:
+                asyncio.create_task(self.stop_proxy(3))
             return web.Response(text=f"Proxy stopped.")
-        elif request.url.path == f"{self._proxy_url.path}resume" and self.last_resp:
+        elif (
+            request.url.path in [f"{self._proxy_url.path}resume", f"{self._proxy_url.path}/resume"]
+            and self.last_resp
+        ):
             self.init_query = self.query.copy()
             _LOGGER.debug("Resuming request: %s", self.last_resp)
             resp = self.last_resp
         else:
-            if request.url.path in [self._proxy_url.path, f"{self._proxy_url.path}resume"]:
+            if request.url.path in [
+                self._proxy_url.path,
+                f"{self._proxy_url.path}resume",
+                f"{self._proxy_url.path}/resume",
+            ]:
                 # either base path or resume without anything to resume
                 site: URL = self._host_url
                 self.init_query = self.query.copy()
@@ -168,7 +180,7 @@ class AuthCaptureProxy:
         print_resp(resp)
         content_type = resp.content_type
         if content_type == "text/html":
-            text = self._change_host_to_proxy(await resp.text())
+            text = self._swap_proxy_and_host(await resp.text())
             if self.modifiers:
                 for name, modifier in self.modifiers.items():
                     if asyncio.iscoroutinefunction(modifier):
@@ -222,8 +234,8 @@ class AuthCaptureProxy:
         await self.runner.cleanup()
         await self.runner.shutdown()
 
-    def _change_proxy_to_host(self, text: Text) -> Text:
-        """Replace text with proxy address.
+    def _swap_proxy_and_host(self, text: Text) -> Text:
+        """Replace host with proxy address or proxy with host address
 
         Args
             text (Text): text to replace
@@ -232,23 +244,19 @@ class AuthCaptureProxy:
             Text: Result of replacing
 
         """
-        return text.replace(
-            str(self.access_url().with_path("/")), str(self._host_url.with_path("/"))
-        )
-
-    def _change_host_to_proxy(self, text: Text) -> Text:
-        """Replace text with host address.
-
-        Args
-            text (Text): text to replace
-
-        Returns
-            Text: Result of replacing
-
-        """
-        return text.replace(
-            str(self._host_url.with_path("/")), str(self.access_url().with_path("/"))
-        )
+        host_string: Text = str(self._host_url.with_path("/"))
+        proxy_string: Text = str(self.access_url())
+        if not proxy_string or proxy_string == "/" or proxy_string[-1] != "/":
+            proxy_string = f"{proxy_string}/"
+        if proxy_string in text:
+            _LOGGER.debug("Replacing %s with %s", proxy_string, host_string)
+            return text.replace(proxy_string, host_string)
+        elif host_string in text:
+            _LOGGER.debug("Replacing %s with %s", host_string, proxy_string)
+            return text.replace(host_string, proxy_string)
+        else:
+            _LOGGER.warning("Unable to find %s and %s in %s", host_string, proxy_string, text)
+            return text
 
     def _change_headers(self, site: URL, request: web.Request) -> multidict.MultiDict:
         # necessary since MultiDict.update did not appear to work
@@ -265,6 +273,6 @@ class AuthCaptureProxy:
             # Remove referer for starting request; this may have query items we shouldn't pass
             result.pop("Referer")
         elif result.get("Referer"):
-            result["Referer"] = self._change_proxy_to_host(result.get("Referer"))
+            result["Referer"] = self._swap_proxy_and_host(result.get("Referer"))
         # _LOGGER.debug("Final headers %s", result)
         return result
