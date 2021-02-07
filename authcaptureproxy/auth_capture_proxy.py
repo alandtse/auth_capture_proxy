@@ -10,8 +10,8 @@ import multidict
 from ssl import SSLContext
 from yarl import URL
 
-from .helper import print_resp
-from .stackoverflow import get_open_port
+from authcaptureproxy.helper import print_resp
+from authcaptureproxy.stackoverflow import get_open_port
 
 _LOGGER = logging.getLogger(__name__)
 
