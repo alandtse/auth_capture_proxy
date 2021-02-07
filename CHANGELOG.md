@@ -2,6 +2,10 @@
 
 <!--next-version-placeholder-->
 
+## v0.3.1 (2021-02-07)
+### Fix
+* Handle http downgrade by nginx proxy ([`186dcf0`](https://github.com/alandtse/auth_capture_proxy/commit/186dcf0dded7610d7a16be2437286b61ad042599))
+
 ## v0.3.0 (2021-02-07)
 ### Feature
 * Add change_host_url ([`fe6226e`](https://github.com/alandtse/auth_capture_proxy/commit/fe6226ee9cc9f6a1aecf6cf84e963ab6ad8470c7))
