@@ -33,6 +33,7 @@ def autofill(items: dict, html: Text) -> Text:
         return html
     for item, value in items.items():
         for html_tag in soup.find_all(attrs={"name": item}) + soup.find_all(attrs={"id": item}):
-            html_tag["value"] = value
-            _LOGGER.debug("Filled %s", str(html_tag))
+            if not html_tag.get("value"):
+                html_tag["value"] = value
+                _LOGGER.debug("Filled %s", str(html_tag))
     return str(soup)
