@@ -314,6 +314,14 @@ class AuthCaptureProxy:
         elif host_string in text:
             _LOGGER.debug("Replacing %s with %s", host_string, proxy_string)
             return text.replace(host_string, proxy_string)
+        elif proxy_string.replace("https", "http") in text:
+            _LOGGER.debug(
+                "Replacing %s with https:%s for %s",
+                proxy_string.replace("https", "http"),
+                proxy_string,
+                text,
+            )
+            return text.replace(proxy_string.replace("https", "http"), proxy_string)
         else:
             _LOGGER.debug("Unable to find %s and %s in %s", host_string, proxy_string, text)
             return text
