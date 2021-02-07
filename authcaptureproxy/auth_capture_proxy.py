@@ -100,6 +100,19 @@ class AuthCaptureProxy:
         """
         self._modifiers = value
 
+    async def change_host_url(self, new_url: URL) -> None:
+        """Change the host url of the proxy.
+
+        This will also reset all stored data.
+
+        Args:
+            new_url (URL): original url for login, e.g., http://amazon.com
+        """
+        if not isinstance(new_url, URL):
+            raise ValueError("URL required")
+        self._host_url = new_url
+        await self.reset_data
+
     async def reset_data(self) -> None:
         """Reset all stored data.
 
