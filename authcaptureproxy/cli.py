@@ -89,7 +89,7 @@ async def proxy_example(
         """
         # Did we reach specific url?
         typer.echo(f"URL {resp.url}")
-        if str(resp.url) == "https://www.amazon.com/?ref_=nav_signin&":
+        if "https://www.amazon.com/?ref_=nav_signin" in str(resp.url):
             # save any needed info from resp, data, or query
             # cookies will be in proxy.session.cookie_jar
             asyncio.create_task(proxy.stop_proxy(3))  # stop proxy in 3 seconds
