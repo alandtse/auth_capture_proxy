@@ -312,7 +312,7 @@ class AuthCaptureProxy:
             _LOGGER.debug("Replacing %s with %s", host_string, proxy_string)
             return text.replace(host_string, proxy_string)
         else:
-            _LOGGER.warning("Unable to find %s and %s in %s", host_string, proxy_string, text)
+            _LOGGER.debug("Unable to find %s and %s in %s", host_string, proxy_string, text)
             return text
 
     def _change_headers(self, site: URL, request: web.Request) -> multidict.MultiDict:
