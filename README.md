@@ -5,6 +5,7 @@
 [![Python version compatibility](https://img.shields.io/pypi/pyversions/authcaptureproxy)](https://pypi.org/project/authcaptureproxy)
 [![Version on Github](https://img.shields.io/github/v/release/alandtse/auth_capture_proxy?include_prereleases&label=GitHub)](https://github.com/alandtse/auth_capture_proxy/releases)
 [![Version on PyPi](https://img.shields.io/pypi/v/authcaptureproxy)](https://pypi.org/project/authcaptureproxy)
+![PyPI - Downloads](https://img.shields.io/pypi/dd/authcaptureproxy)
 [![Documentation Status](https://readthedocs.org/projects/auth-capture-proxy/badge/?version=latest)](https://auth-capture-proxy.readthedocs.io/en/latest/?badge=latest)
 [![Build (Github Actions)](https://img.shields.io/github/workflow/status/alandtse/auth_capture_proxy/Build%20&%20test?label=Build%20&%20test)](https://github.com/alandtse/auth_capture_proxy/actions)
 [![Test coverage (coveralls)](https://coveralls.io/repos/github/alandtse/auth_capture_proxy/badge.svg?branch=main&service=github)](https://coveralls.io/github/alandtse/auth_capture_proxy?branch=main)
