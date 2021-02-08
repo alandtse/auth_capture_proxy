@@ -2,6 +2,10 @@
 
 <!--next-version-placeholder-->
 
+## v0.3.2 (2021-02-08)
+### Fix
+* Add download badge ([`0f03af4`](https://github.com/alandtse/auth_capture_proxy/commit/0f03af42883a0ef8ab0567db5eced3be9403d2cb))
+
 ## v0.3.1 (2021-02-07)
 ### Fix
 * Handle http downgrade by nginx proxy ([`186dcf0`](https://github.com/alandtse/auth_capture_proxy/commit/186dcf0dded7610d7a16be2437286b61ad042599))
