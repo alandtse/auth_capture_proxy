@@ -189,6 +189,7 @@ class AuthCaptureProxy:
                     self._host_url,
                 )
             headers = self._change_headers(site, request)
+            _LOGGER.debug("Attempting %s to %s", method, site)
             try:
                 if data:
                     resp = await getattr(self.session, method)(site, data=data, headers=headers)
@@ -226,7 +227,6 @@ class AuthCaptureProxy:
                         )
         else:
             _LOGGER.warning("Proxy has no tests; please set.")
-        print_resp(resp)
         content_type = resp.content_type
         if content_type == "text/html":
             text = self._swap_proxy_and_host(await resp.text())
