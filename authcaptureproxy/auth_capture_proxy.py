@@ -164,16 +164,13 @@ class AuthCaptureProxy:
         data = await request.post()
         if data:
             self.data.update(await request.post())
-        if request.url.path in [
-            f"{self._proxy_url.path}stop",
-            f"{self._proxy_url.path}/stop",
-        ]:
+        if request.url.path == self._proxy_url.with_path(f"{self._proxy_url.path}/stop").path:
             self.all_handler_active = False
             if self.active:
                 asyncio.create_task(self.stop_proxy(3))
             return web.Response(text=f"Proxy stopped.")
         elif (
-            request.url.path in [f"{self._proxy_url.path}resume", f"{self._proxy_url.path}/resume"]
+            request.url.path == self._proxy_url.with_path(f"{self._proxy_url.path}/resume").path
             and self.last_resp
         ):
             self.init_query = self.query.copy()
@@ -182,8 +179,7 @@ class AuthCaptureProxy:
         else:
             if request.url.path in [
                 self._proxy_url.path,
-                f"{self._proxy_url.path}resume",
-                f"{self._proxy_url.path}/resume",
+                self._proxy_url.with_path(f"{self._proxy_url.path}/resume").path,
             ]:
                 # either base path or resume without anything to resume
                 site: URL = self._host_url
