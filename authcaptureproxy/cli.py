@@ -97,21 +97,24 @@ async def proxy_example(
                 return URL(callback_url)  # 302 redirect
             return f"Successfully logged in {data.get('email')} and {data.get('password')}. Please close the window."
 
+    await proxy.start_proxy()
+    # add tests and modifiers after the proxy has started so that port data is available for self.access_url()
     # add tests. See :mod:`authcaptureproxy.examples.testers`.
     proxy.tests = {"test_url": test_url}
 
     # add modifiers like autofill to manipulate html returned to browser. See :mod:`authcaptureproxy.examples.modifiers`.
-    proxy.modifiers = {
-        "autofill": partial(
-            autofill,
-            {
-                "password": "CHANGEME",
-            },
-        )
-    }
-
-    await proxy.start_proxy()
-    # connect to proxy at proxy.access_url and sign in
+    # this will add to any default modifiers
+    proxy.modifiers.update(
+        {
+            "autofill": partial(
+                autofill,
+                {
+                    "password": "CHANGEME",
+                },
+            )
+        }
+    )
+    # connect to proxy at proxy.access_url() and sign in
     typer.echo(
         f"Launching browser to connect to proxy at {proxy.access_url()} and sign in using logged-out account."
     )
