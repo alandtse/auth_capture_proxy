@@ -6,6 +6,7 @@ Command-line interface for auth_capture_proxy.
 from __future__ import annotations
 
 import asyncio
+import datetime
 import logging
 import time
 from functools import partial, wraps
@@ -56,6 +57,7 @@ async def proxy_example(
     proxy: str = "http://127.0.0.1",
     host: str = "https://www.amazon.com/ap/signin?openid.pape.max_auth_age=0&openid.return_to=https%3A%2F%2Fwww.amazon.com%2F%3Fref_%3Dnav_signin&openid.identity=http%3A%2F%2Fspecs.openid.net%2Fauth%2F2.0%2Fidentifier_select&openid.assoc_handle=usflex&openid.mode=checkid_setup&openid.claimed_id=http%3A%2F%2Fspecs.openid.net%2Fauth%2F2.0%2Fidentifier_select&openid.ns=http%3A%2F%2Fspecs.openid.net%2Fauth%2F2.0&",
     callback: str = "",
+    timeout: int = 300,
 ):
     """Run proxy example for Amazon.com.
 
@@ -63,6 +65,7 @@ async def proxy_example(
         proxy (str, optional): The url to connect to the proxy. If no port specified, will generate random port. Defaults to "http://127.0.0.1".
         host (str, optional): The signing page to proxy. Defaults to "https://www.amazon.com/ap/signin?openid.pape.max_auth_age=0&openid.return_to=https%3A%2F%2Fwww.amazon.com%2F%3Fref_%3Dnav_signin&openid.identity=http%3A%2F%2Fspecs.openid.net%2Fauth%2F2.0%2Fidentifier_select&openid.assoc_handle=usflex&openid.mode=checkid_setup&openid.claimed_id=http%3A%2F%2Fspecs.openid.net%2Fauth%2F2.0%2Fidentifier_select&openid.ns=http%3A%2F%2Fspecs.openid.net%2Fauth%2F2.0&".
         callback (str, optional): Callback url to redirect browser to on success. Defaults to "".
+        timeout (int, optional): How long to leave the proxy running without success. Defaults to 300.
 
     """
     proxy_url = None
@@ -119,10 +122,14 @@ async def proxy_example(
         f"Launching browser to connect to proxy at {proxy.access_url()} and sign in using logged-out account."
     )
     typer.launch(str(proxy.access_url()))
-
-    # set proxy to close in 5 minutes
-    await proxy.stop_proxy(delay=300)
+    typer.echo(f"Proxy will timeout and close in {datetime.timedelta(seconds=timeout)}.")
+    asyncio.create_task(proxy.stop_proxy(timeout))
     # or stop the proxy when done manually
+    while proxy.active:
+        # loop until proxy done
+        await asyncio.sleep(1)
+    typer.echo("Proxy completed; exiting")
+    raise typer.Exit()
 
 
 if __name__ == "__main__":
