@@ -5,6 +5,7 @@ Python Package auth capture proxy.
 This is code borrowed from stack overflow.
 """
 import socket
+from typing import Text
 
 
 def get_open_port() -> int:
@@ -23,3 +24,23 @@ def get_open_port() -> int:
     port = s.getsockname()[1]
     s.close()
     return port
+
+
+def return_timer_countdown_refresh_html(seconds: int, text: Text) -> Text:
+    """Return JavaScript timer countdown for html injection. This is to use for tester success.
+
+    https://stackoverflow.com/questions/16532577/javascript-refresh-countdown-text/16532611#16532611
+
+    Args:
+        seconds (int): Seconds to delay
+        text (Text): HTML text to display before the timer text.
+    Returns:
+        Text: HTML for injection
+    """
+    return f"""<html><head></head><body>{text}<div id="countdown"></div></body>
+    <script defer="defer">(function countdown(remaining) {{
+    if(remaining === 0)
+        location.reload(true);
+    document.getElementById('countdown').innerHTML = 'Automaticaly reloading page in ' + remaining + ' seconds.';
+    setTimeout(function(){{ countdown(remaining - 1); }}, 1000);
+    }})({seconds});</script></html>"""

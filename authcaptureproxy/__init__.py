@@ -15,7 +15,9 @@ except ModuleNotFoundError:
 # If you need to support Python 3.7, change to importlib_metadata (underscore, not dot)
 # and then list importlib_metadata to [tool.poetry.dependencies] and docs/requirements.txt
 from pathlib import Path
+
 from .auth_capture_proxy import AuthCaptureProxy
+from .stackoverflow import return_timer_countdown_refresh_html
 
 pkg = Path(__file__).absolute().parent.name
 logger = logging.getLogger(pkg)
@@ -68,4 +70,4 @@ if __name__ == "__main__":  # pragma: no cover
         print(f"Unknown project info for {pkg}")
 
 
-__all__ = ["AuthCaptureProxy"]
+__all__ = ["AuthCaptureProxy", "return_timer_countdown_refresh_html"]
