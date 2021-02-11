@@ -8,6 +8,7 @@ from __future__ import annotations
 import asyncio
 import datetime
 import logging
+import sys
 import time
 from functools import partial, wraps
 from typing import Any, Dict, Optional, Text
@@ -58,6 +59,7 @@ async def proxy_example(
     host: str = "https://www.amazon.com/ap/signin?openid.pape.max_auth_age=0&openid.return_to=https%3A%2F%2Fwww.amazon.com%2F%3Fref_%3Dnav_signin&openid.identity=http%3A%2F%2Fspecs.openid.net%2Fauth%2F2.0%2Fidentifier_select&openid.assoc_handle=usflex&openid.mode=checkid_setup&openid.claimed_id=http%3A%2F%2Fspecs.openid.net%2Fauth%2F2.0%2Fidentifier_select&openid.ns=http%3A%2F%2Fspecs.openid.net%2Fauth%2F2.0&",
     callback: str = "",
     timeout: int = 300,
+    debug: bool = False,
 ):
     """Run proxy example for Amazon.com.
 
@@ -66,8 +68,11 @@ async def proxy_example(
         host (str, optional): The signing page to proxy. Defaults to "https://www.amazon.com/ap/signin?openid.pape.max_auth_age=0&openid.return_to=https%3A%2F%2Fwww.amazon.com%2F%3Fref_%3Dnav_signin&openid.identity=http%3A%2F%2Fspecs.openid.net%2Fauth%2F2.0%2Fidentifier_select&openid.assoc_handle=usflex&openid.mode=checkid_setup&openid.claimed_id=http%3A%2F%2Fspecs.openid.net%2Fauth%2F2.0%2Fidentifier_select&openid.ns=http%3A%2F%2Fspecs.openid.net%2Fauth%2F2.0&".
         callback (str, optional): Callback url to redirect browser to on success. Defaults to "".
         timeout (int, optional): How long to leave the proxy running without success. Defaults to 300.
+        debug (bool, optional): Whether to print debug messages to console. Defaults to False.
 
     """
+    if debug:
+        logging.basicConfig(stream=sys.stderr, level=logging.DEBUG)
     proxy_url = None
     host_url = None
     callback_url = None
