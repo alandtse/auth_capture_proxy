@@ -12,6 +12,7 @@ def get_open_port() -> int:
     """Get random open port.
 
     https://stackoverflow.com/questions/2838244/get-open-tcp-port-in-python/2838309#2838309
+
     Returns
         int: a random open port. This does not guarantee the port will remain open and may fail if there is a race condition.
     """
