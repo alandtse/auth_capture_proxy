@@ -341,8 +341,8 @@ class AuthCaptureProxy:
         if result.get("Origin"):
             result["Origin"] = f"{site.with_path('')}"
         if result.get("Referer") and URL(result.get("Referer")).query == self.init_query:
-            # Remove referer for starting request; this may have query items we shouldn't pass
-            result.pop("Referer")
+            # Change referer for starting request; this may have query items we shouldn't pass
+            result["Referer"] = str(self._host_url)
         elif result.get("Referer"):
             result["Referer"] = self._swap_proxy_and_host(result.get("Referer"), domain_only=True)
         # _LOGGER.debug("Final headers %s", result)
