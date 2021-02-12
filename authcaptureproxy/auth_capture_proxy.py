@@ -41,8 +41,15 @@ class AuthCaptureProxy:
         self.init_query: Dict[Text, Any] = {}
         self.query: Dict[Text, Any] = {}
         self.data: Dict[Text, Any] = {}
+        # tests and modifiers should be initialized after port is actually assigned and not during init.
+        # however, to ensure defaults go first, they should have a dummy key set
         self._tests: Dict[Text, Callable] = {}
-        self._modifiers: Dict[Text, Callable] = {}
+        self._modifiers: Dict[Text, Callable] = {
+            "prepend_relative_urls": lambda x: x,
+            "change_host_to_proxy": lambda x: x,
+        }
+        self._old_tests: Dict[Text, Callable] = {}
+        self._old_modifiers: Dict[Text, Callable] = {}
         self._active = False
         self._all_handler_active = True
         self.headers = {}
@@ -82,6 +89,8 @@ class AuthCaptureProxy:
         Args:
             value (Dict[Text, Any]): A dictionary of tests.
         """
+        self.refresh_tests()  # refresh in case of pending change
+        self._old_tests = self._tests.copy()
         self._tests = value
 
     @property
@@ -99,7 +108,13 @@ class AuthCaptureProxy:
         Args:
             value (Dict[Text, Any]): A dictionary of tests.
         """
+        self.refresh_modifiers()  # refresh in case of pending change
+        self._old_modifiers = self._modifiers
         self._modifiers = value
+
+    def access_url(self) -> URL:
+        """Return access url for proxy with port."""
+        return self._proxy_url.with_port(self.port)
 
     async def change_host_url(self, new_url: URL) -> None:
         """Change the host url of the proxy.
@@ -132,9 +147,36 @@ class AuthCaptureProxy:
         self._all_handler_active = True
         _LOGGER.debug("Proxy data reset.")
 
-    def access_url(self) -> URL:
-        """Return access url for proxy with port."""
-        return self._proxy_url.with_port(self.port)
+    def refresh_tests(self) -> None:
+        """Refresh tests.
+
+        Because tests may use partials, they will freeze their parameters which is a problem with self.access() if the port hasn't been assigned.
+        """
+        if self._tests != self._old_tests:
+            self.tests.update({})
+            self.old_tests = self.tests.copy()
+            _LOGGER.debug("Refreshed %s tests: %s", len(self.tests), list(self.tests.keys()))
+
+    def refresh_modifiers(self) -> None:
+        """Refresh modifiers.
+
+        Because modifiers may use partials, they will freeze their parameters which is a problem with self.access() if the port hasn't been assigned.
+        """
+        if self._modifiers != self._old_modifiers:
+            self.modifiers.update(
+                {
+                    "prepend_relative_urls": partial(prepend_relative_urls, self.access_url()),
+                    "change_host_to_proxy": partial(
+                        replace_matching_urls,
+                        self._host_url.with_query({}).with_path("/"),
+                        self.access_url(),
+                    ),
+                }
+            )
+            self._old_modifiers = self.modifiers.copy()
+            _LOGGER.debug(
+                "Refreshed %s modifiers: %s", len(self.modifiers), list(self.modifiers.keys())
+            )
 
     async def all_handler(self, request: web.Request, **kwargs) -> web.Response:
         """Handle all requests.
@@ -157,6 +199,8 @@ class AuthCaptureProxy:
             raise web.HTTPNotFound()
         if not self.session:
             self.session = ClientSession()
+        self.refresh_tests()
+        self.refresh_modifiers()
         method = request.method.lower()
         resp: Optional[ClientResponse] = None
         site = URL(self._swap_proxy_and_host(str(request.url)))
