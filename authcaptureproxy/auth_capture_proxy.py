@@ -284,8 +284,18 @@ class AuthCaptureProxy:
             return
         _LOGGER.debug("Stopping proxy at %s after %s seconds", self.access_url(), delay)
         await asyncio.sleep(delay)
+        _LOGGER.debug("Closing site runner")
         await self.runner.cleanup()
         await self.runner.shutdown()
+        _LOGGER.debug("Site runner closed")
+        # close session
+        if self.session and not self.session.closed:
+            _LOGGER.debug("Closing session")
+            if self.session._connector_owner:
+                await self.session._connector.close()
+            _LOGGER.debug("Session closed")
+        self._active = False
+        _LOGGER.debug("Proxy stopped")
 
     def _swap_proxy_and_host(self, text: Text, domain_only: bool = False) -> Text:
         """Replace host with proxy address or proxy with host address
