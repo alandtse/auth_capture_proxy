@@ -45,6 +45,7 @@ class AuthCaptureProxy:
         self._modifiers: Dict[Text, Callable] = {}
         self._active = False
         self._all_handler_active = True
+        self.headers = {}
 
     @property
     def active(self) -> bool:
@@ -346,4 +347,5 @@ class AuthCaptureProxy:
         elif result.get("Referer"):
             result["Referer"] = self._swap_proxy_and_host(result.get("Referer"), domain_only=True)
         # _LOGGER.debug("Final headers %s", result)
+        result.update(self.headers if self.headers else {})
         return result
