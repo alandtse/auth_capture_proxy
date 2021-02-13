@@ -129,7 +129,7 @@ class AuthCaptureProxy:
         if not isinstance(new_url, URL):
             raise ValueError("URL required")
         self._host_url = new_url
-        await self.reset_data
+        await self.reset_data()
 
     async def reset_data(self) -> None:
         """Reset all stored data.
