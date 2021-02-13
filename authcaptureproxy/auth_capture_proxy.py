@@ -11,7 +11,8 @@ from aiohttp import ClientConnectionError, ClientSession, TooManyRedirects, web
 from aiohttp.client_reqrep import ClientResponse
 from yarl import URL
 
-from authcaptureproxy.helper import run_func
+from authcaptureproxy.examples.modifiers import prepend_relative_urls, replace_matching_urls
+from authcaptureproxy.helper import print_resp, run_func, swap_url
 from authcaptureproxy.stackoverflow import get_open_port
 
 _LOGGER = logging.getLogger(__name__)
@@ -203,6 +204,7 @@ class AuthCaptureProxy:
         self.refresh_tests()
         self.refresh_modifiers()
         method = request.method.lower()
+        _LOGGER.debug("Received %s: %s", method, request.url)
         resp: Optional[ClientResponse] = None
         if request.scheme == "http" and self.access_url().scheme == "https":
             # detect reverse proxy downgrade
@@ -316,7 +318,7 @@ class AuthCaptureProxy:
             _LOGGER.warning("Proxy has no tests; please set.")
         content_type = resp.content_type
         if content_type == "text/html":
-            text = self._swap_proxy_and_host(await resp.text())
+            text = await resp.text()
             if self.modifiers:
                 for name, modifier in self.modifiers.items():
                     text = await run_func(modifier, name, text)
@@ -326,7 +328,8 @@ class AuthCaptureProxy:
                 content_type=content_type,
             )
         # handle non html content
-        return web.Response(body=await resp.content.read(), content_type=content_type)
+        _LOGGER.debug("Passing through %s", content_type)
+        return web.Response(body=await resp.read(), content_type=content_type)
 
     async def start_proxy(
         self, host: Optional[Text] = None, ssl_context: Optional[SSLContext] = None
@@ -395,17 +398,28 @@ class AuthCaptureProxy:
         proxy_string: Text = str(
             self.access_url() if not domain_only else self.access_url().with_path("/")
         )
-        if not proxy_string or proxy_string == "/" or proxy_string[-1] != "/":
-            proxy_string = f"{proxy_string}/"
-        if proxy_string in text:
-            _LOGGER.debug("Replacing %s with %s", proxy_string, host_string)
-            return text.replace(proxy_string, host_string)
-        elif proxy_string.replace("https", "http") in text:
+        if str(self.access_url().with_path("/")).replace("https", "http") in text:
             _LOGGER.debug(
-                "Replacing %s with %s", proxy_string.replace("https", "http"), host_string
+                "Replacing %s with %s",
+                str(self.access_url().with_path("/")).replace("https", "http"),
+                str(self.access_url().with_path("/")),
             )
-            return text.replace(proxy_string.replace("https", "http"), host_string)
+            text = text.replace(
+                str(self.access_url().with_path("/")).replace("https", "http"),
+                str(self.access_url().with_path("/")),
+            )
+        if proxy_string in text:
+            if host_string[-1] == "/" and (
+                not proxy_string or proxy_string == "/" or proxy_string[-1] != "/"
+            ):
+                proxy_string = f"{proxy_string}/"
+            _LOGGER.debug("Replacing %s with %s in %s", proxy_string, host_string, text)
+            return text.replace(proxy_string, host_string)
         elif host_string in text:
+            if host_string[-1] == "/" and (
+                not proxy_string or proxy_string == "/" or proxy_string[-1] != "/"
+            ):
+                proxy_string = f"{proxy_string}/"
             _LOGGER.debug("Replacing %s with %s", host_string, proxy_string)
             return text.replace(host_string, proxy_string)
         else:
