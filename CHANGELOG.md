@@ -2,6 +2,10 @@
 
 <!--next-version-placeholder-->
 
+## v0.4.0 (2021-02-13)
+### Feature
+* Add github_token to ci ([`79628ca`](https://github.com/alandtse/auth_capture_proxy/commit/79628ca2aea8142bce5699d169098c474b3b6595))
+
 ## v0.3.2 (2021-02-08)
 ### Fix
 * Add download badge ([`0f03af4`](https://github.com/alandtse/auth_capture_proxy/commit/0f03af42883a0ef8ab0567db5eced3be9403d2cb))
