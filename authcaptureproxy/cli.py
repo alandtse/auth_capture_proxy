@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import asyncio
 import datetime
+import json
 import logging
 import sys
 import time
@@ -103,7 +104,7 @@ async def proxy_example(
             asyncio.create_task(proxy.stop_proxy(3))  # stop proxy in 3 seconds
             if callback_url:
                 return URL(callback_url)  # 302 redirect
-            return f"Successfully logged in {data.get('email')} and {data.get('password')}. Please close the window."
+            return f"Successfully logged in {data.get('email')} and {data.get('password')}. Please close the window.<br /><b>Post data</b><br />{json.dumps(data)}<br /><b>Query Data:</b><br />{json.dumps(query)}<br /><b>Cookies:</b></br>{proxy.session.cookie_jar.filter_cookies(proxy._host_url.with_path('/'))}"
 
     await proxy.start_proxy()
     # add tests and modifiers after the proxy has started so that port data is available for self.access_url()
