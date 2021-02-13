@@ -310,10 +310,8 @@ class AuthCaptureProxy:
                         )
                         raise web.HTTPFound(location=result)
                     elif isinstance(result, str):
-                        _LOGGER.debug("Displaying success page: %s", result)
-                        return web.Response(
-                            text=result,
-                        )
+                        _LOGGER.debug("Displaying page:\n%s", result)
+                        return web.Response(text=result, content_type="text/html")
         else:
             _LOGGER.warning("Proxy has no tests; please set.")
         content_type = resp.content_type
