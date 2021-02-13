@@ -18,7 +18,7 @@ from pathlib import Path
 
 from authcaptureproxy.auth_capture_proxy import AuthCaptureProxy
 from authcaptureproxy.examples.modifiers import find_regex_urls
-from authcaptureproxy.helper import prepend_url
+from authcaptureproxy.helper import prepend_url, swap_url
 from authcaptureproxy.stackoverflow import return_timer_countdown_refresh_html
 
 pkg = Path(__file__).absolute().parent.name
@@ -77,4 +77,6 @@ __all__ = [
     "AuthCaptureProxy",
     "return_timer_countdown_refresh_html",
     "find_regex_urls",
+    "prepend_url",
+    "swap_url",
 ]
