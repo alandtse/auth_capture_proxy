@@ -10,7 +10,7 @@ import multidict
 from ssl import SSLContext
 from yarl import URL
 
-from authcaptureproxy.helper import print_resp
+from authcaptureproxy.helper import run_func
 from authcaptureproxy.stackoverflow import get_open_port
 
 _LOGGER = logging.getLogger(__name__)
@@ -251,14 +251,9 @@ class AuthCaptureProxy:
         if self.tests:
             for test_name, test in self.tests.items():
                 result = None
-                if asyncio.iscoroutinefunction(test):
-                    _LOGGER.debug("Running coroutine test %s", test_name)
-                    result = await test(resp, self.data, self.query)
-                else:
-                    _LOGGER.debug("Running function test %s", test_name)
-                    result = test(resp, self.data, self.query)
+                result = await run_func(test, test_name, resp, self.data, self.query)
                 if result:
-                    _LOGGER.debug("Test %s reports success", test_name)
+                    _LOGGER.debug("Test %s triggered", test_name)
                     if isinstance(result, URL):
                         _LOGGER.debug(
                             "Redirecting to callback: %s",
@@ -277,12 +272,8 @@ class AuthCaptureProxy:
             text = self._swap_proxy_and_host(await resp.text())
             if self.modifiers:
                 for name, modifier in self.modifiers.items():
-                    if asyncio.iscoroutinefunction(modifier):
-                        _LOGGER.debug("Applied coroutine modifier: %s", name)
-                        text = await modifier(text)
-                    else:
-                        _LOGGER.debug("Applied function modifier: %s", name)
-                        text = modifier(text)
+                    text = await run_func(modifier, name, text)
+            # _LOGGER.debug("Returning modified text:\n%s", text)
             return web.Response(
                 text=text,
                 content_type=content_type,

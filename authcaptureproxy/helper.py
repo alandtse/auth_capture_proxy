@@ -6,6 +6,7 @@ Helper files.
 """
 import json
 import logging
+from asyncio import iscoroutinefunction
 from http.cookies import SimpleCookie
 from typing import Any, Callable, Dict, Text
 
@@ -50,6 +51,44 @@ def print_resp(resp: ClientResponse) -> None:
         reason,
         resp.headers,
     )
+
+
+async def run_func(func: Callable, name: Text = "", *args, **kwargs) -> Any:
+    """Run any function or coroutine.
+
+    Args:
+        func (Callable): Func to run
+        name (Text, optional): Name for function. Defaults to "".
+
+    Returns:
+        Any: Result of running the function
+    """
+    result = None
+    unknown_name = repr(func)
+    if name:
+        name = name
+    else:
+        try:
+            # get function name
+            name = func.__name__
+        except AttributeError:
+            # check partial
+            try:
+                name = func.func.__name__
+            except AttributeError:
+                # unknown
+                name = unknown_name
+    if (
+        iscoroutinefunction(func)
+        or getattr(func, "func")
+        and iscoroutinefunction(getattr(func, "func"))
+    ):
+        _LOGGER.debug("Running coroutine %s", name)
+        result = await func(*args, **kwargs)
+    else:
+        _LOGGER.debug("Running function %s", name)
+        result = func(*args, **kwargs)
+    return result
 
 
 def swap_url(
