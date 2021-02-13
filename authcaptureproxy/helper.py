@@ -4,8 +4,11 @@ Python Package for auth capture proxy.
 
 Helper files.
 """
+import json
 import logging
-from typing import Text
+from http.cookies import SimpleCookie
+from typing import Any, Callable, Dict, Text
+
 from aiohttp import ClientResponse
 from yarl import URL
 
@@ -28,12 +31,21 @@ def print_resp(resp: ClientResponse) -> None:
     method = resp.request_info.method
     status = resp.status
     reason = resp.reason
-    headers = resp.request_info.headers
+    headers = eval(
+        str(resp.request_info.headers).replace("<CIMultiDictProxy(", "{").replace(")>", "}")
+    )
+    cookies = {}
+    if headers.get("Cookie"):
+        cookie = SimpleCookie()
+        cookie.load(headers.get("Cookie"))
+        for key, morsel in cookie.items():
+            cookies[key] = morsel.value
+        headers["Cookie"] = cookies
     _LOGGER.debug(
         "%s: \n%s with\n%s\n returned %s:%s with response %s",
         method,
         url,
-        headers,
+        json.dumps(headers),
         status,
         reason,
         resp.headers,
