@@ -12,7 +12,7 @@ import logging
 import sys
 import time
 from functools import partial, wraps
-from typing import Any, Dict, Optional, Text
+from typing import Any, Dict, Text
 
 import typer
 from aiohttp import ClientResponse
@@ -26,6 +26,8 @@ cli = typer.Typer()
 
 
 def coro(f):
+    """Wrap f to run as async."""
+
     @wraps(f)
     def wrapper(*args, **kwargs):
         return asyncio.run(f(*args, **kwargs))
@@ -47,7 +49,7 @@ def info(n_seconds: float = 0.01, verbose: bool = False) -> None:
         typer.echo(str(metadata.__dict__))
     total = 0
     with typer.progressbar(range(100)) as progress:
-        for value in progress:
+        for _ in progress:
             time.sleep(n_seconds)
             total += 1
     typer.echo(f"Processed {total} things.")
@@ -83,7 +85,7 @@ async def proxy_example(
         host_url = URL(host)
     if callback:
         callback_url = URL(callback)
-    proxy = AuthCaptureProxy(proxy_url=proxy_url, host_url=host_url)
+    proxy_obj: AuthCaptureProxy = AuthCaptureProxy(proxy_url=proxy_url, host_url=host_url)
 
     def test_url(resp: ClientResponse, data: Dict[Text, Any], query: Dict[Text, Any]):
         """Test for a successful Amazon URL.
@@ -101,19 +103,19 @@ async def proxy_example(
         if "https://www.amazon.com/?ref_=nav_signin" in str(resp.url):
             # save any needed info from resp, data, or query
             # cookies will be in proxy.session.cookie_jar
-            asyncio.create_task(proxy.stop_proxy(3))  # stop proxy in 3 seconds
+            asyncio.create_task(proxy_obj.stop_proxy(3))  # stop proxy in 3 seconds
             if callback_url:
                 return URL(callback_url)  # 302 redirect
-            return f"Successfully logged in {data.get('email')} and {data.get('password')}. Please close the window.<br /><b>Post data</b><br />{json.dumps(data)}<br /><b>Query Data:</b><br />{json.dumps(query)}<br /><b>Cookies:</b></br>{proxy.session.cookie_jar.filter_cookies(proxy._host_url.with_path('/'))}"
+            return f"Successfully logged in {data.get('email')} and {data.get('password')}. Please close the window.<br /><b>Post data</b><br />{json.dumps(data)}<br /><b>Query Data:</b><br />{json.dumps(query)}<br /><b>Cookies:</b></br>{proxy_obj.session.cookie_jar.filter_cookies(proxy_obj._host_url.with_path('/'))}"
 
-    await proxy.start_proxy()
+    await proxy_obj.start_proxy()
     # add tests and modifiers after the proxy has started so that port data is available for self.access_url()
     # add tests. See :mod:`authcaptureproxy.examples.testers`.
-    proxy.tests = {"test_url": test_url}
+    proxy_obj.tests = {"test_url": test_url}
 
     # add modifiers like autofill to manipulate html returned to browser. See :mod:`authcaptureproxy.examples.modifiers`.
     # this will add to any default modifiers
-    proxy.modifiers.update(
+    proxy_obj.modifiers.update(
         {
             "autofill": partial(
                 autofill,
@@ -125,13 +127,13 @@ async def proxy_example(
     )
     # connect to proxy at proxy.access_url() and sign in
     typer.echo(
-        f"Launching browser to connect to proxy at {proxy.access_url()} and sign in using logged-out account."
+        f"Launching browser to connect to proxy at {proxy_obj.access_url()} and sign in using logged-out account."
     )
-    typer.launch(str(proxy.access_url()))
+    typer.launch(str(proxy_obj.access_url()))
     typer.echo(f"Proxy will timeout and close in {datetime.timedelta(seconds=timeout)}.")
-    asyncio.create_task(proxy.stop_proxy(timeout))
+    asyncio.create_task(proxy_obj.stop_proxy(timeout))
     # or stop the proxy when done manually
-    while proxy.active:
+    while proxy_obj.active:
         # loop until proxy done
         await asyncio.sleep(1)
     typer.echo("Proxy completed; exiting")

@@ -4,12 +4,13 @@ Python Package for auth capture proxy.
 
 Helper files.
 """
+import ast
 import json
 import logging
 from asyncio import iscoroutinefunction
 from http.cookies import SimpleCookie
-from typing import Any, Callable, Dict, Text
-
+from typing import Any, Callable, Text
+from multidict import MultiDict
 from aiohttp import ClientResponse
 from yarl import URL
 
@@ -32,12 +33,12 @@ def print_resp(resp: ClientResponse) -> None:
     method = resp.request_info.method
     status = resp.status
     reason = resp.reason
-    headers = eval(
+    headers = ast.literal_eval(
         str(resp.request_info.headers).replace("<CIMultiDictProxy(", "{").replace(")>", "}")
     )
     cookies = {}
     if headers.get("Cookie"):
-        cookie = SimpleCookie()
+        cookie: SimpleCookie = SimpleCookie()
         cookie.load(headers.get("Cookie"))
         for key, morsel in cookie.items():
             cookies[key] = morsel.value
@@ -74,15 +75,11 @@ async def run_func(func: Callable, name: Text = "", *args, **kwargs) -> Any:
         except AttributeError:
             # check partial
             try:
-                name = func.func.__name__
+                name = func.func.__name__  # type: ignore[attr-defined]
             except AttributeError:
                 # unknown
                 name = unknown_name
-    if (
-        iscoroutinefunction(func)
-        or getattr(func, "func", None)
-        and iscoroutinefunction(getattr(func, "func"))
-    ):
+    if iscoroutinefunction(func) or getattr(func, "func", None) and iscoroutinefunction(func.func):  # type: ignore[attr-defined]
         _LOGGER.debug("Running coroutine %s", name)
         result = await func(*args, **kwargs)
     else:
@@ -93,9 +90,9 @@ async def run_func(func: Callable, name: Text = "", *args, **kwargs) -> Any:
 
 def swap_url(
     ignore_query: bool = True,
-    old_url: URL = URL(""),
-    new_url: URL = URL(""),
-    url: URL = URL(""),
+    old_url: URL = URL(""),  # noqa: B008
+    new_url: URL = URL(""),  # noqa: B008
+    url: URL = URL(""),  # noqa: B008
 ) -> URL:
     """Swap any instances of the old url with the new url. Will not replace query info.
 
@@ -110,7 +107,7 @@ def swap_url(
             arg = URL(arg)
     old_url_string: Text = str(old_url.with_query({}))
     new_url_string: Text = str(new_url.with_query({}))
-    old_query: Dict[Text, Text] = url.query
+    old_query: MultiDict = url.query
     url_string = str(url.with_query({}))
     # ensure both paths end with "/" if one of them does
     if (

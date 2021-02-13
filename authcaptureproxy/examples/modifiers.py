@@ -9,7 +9,7 @@ import re
 from functools import partial
 from typing import Callable, Dict, List, Optional, Text
 
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup  # type: ignore[import]
 from yarl import URL
 
 from authcaptureproxy.helper import prepend_url, run_func, swap_url
@@ -92,7 +92,7 @@ async def prepend_relative_urls(base_url: URL, html: Text) -> Text:
 
 
 async def find_regex_urls(
-    modifier: Optional[Callable] = None, patterns: Dict[Text, Text] = "", html: Text = ""
+    modifier: Optional[Callable] = None, patterns: Dict[Text, Text] = None, html: Text = ""
 ) -> Text:
     """Find urls for based on regex.
 
@@ -106,6 +106,7 @@ async def find_regex_urls(
     Returns:
         Text: Text after applying the modifier to the urls found using the search.
     """
+    patterns = patterns or {}
     if not html:
         _LOGGER.debug("html is empty")
         return ""
@@ -115,10 +116,6 @@ async def find_regex_urls(
     if not patterns:
         _LOGGER.debug("No patterns provided; returning unmodified")
         return html
-    pattern = r"""(?:\(\s*?["'](?:get|post|delete|put|patch|head|options)["'],\s*?["'])([^'"]*)["']\s*?,[^\)]*?\)"""
-    test = """ajax("GET", "/oauth2/v3/authorize/mfa/factors?transaction_id=vzFveM1C", null, function(err, response, statusCode)
-
-    ajax("POST", "/oauth2/v3/authorize/mfa/factors?transaction_id=vzFveM1C", null, function(err, response, statusCode)"""
     for name, pattern in patterns.items():
         s = re.findall(pattern, html, re.IGNORECASE)
         _LOGGER.debug("Found %s patterns for %s", len(s), name)
@@ -131,8 +128,8 @@ async def find_regex_urls(
 
 async def find_urls_bs4(
     modifier: Optional[Callable] = None,
-    search: Dict[Text, Text] = {},
-    exceptions: Dict[Text, List[Text]] = {},
+    search: Dict[Text, Text] = None,
+    exceptions: Dict[Text, List[Text]] = None,
     html: Text = "",
 ) -> Text:
     """Find urls in html using bs4.
@@ -148,6 +145,8 @@ async def find_urls_bs4(
     Returns:
         Text: Text after applying the modifier to the urls found using the search.
     """
+    search = search or {}
+    exceptions = exceptions or {}
     soup: BeautifulSoup = BeautifulSoup(html, "html.parser")
     if not html:
         _LOGGER.debug("Soup is empty")

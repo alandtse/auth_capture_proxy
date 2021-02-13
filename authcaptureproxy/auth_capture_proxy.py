@@ -21,7 +21,8 @@ _LOGGER = logging.getLogger(__name__)
 class AuthCaptureProxy:
     """Class to handle proxy login connections.
 
-    This class relies on tests to be provided to indicate the proxy has completed. At proxy completion all data can be found in self.session, self.data, and self.query."""
+    This class relies on tests to be provided to indicate the proxy has completed. At proxy completion all data can be found in self.session, self.data, and self.query.
+    """
 
     def __init__(
         self, proxy_url: URL, host_url: URL, session: Optional[ClientSession] = None
@@ -54,7 +55,7 @@ class AuthCaptureProxy:
         self._old_modifiers: Dict[Text, Callable] = {}
         self._active = False
         self._all_handler_active = True
-        self.headers = {}
+        self.headers: Dict[Text, Text] = {}
 
     @property
     def active(self) -> bool:
@@ -216,7 +217,7 @@ class AuthCaptureProxy:
                 url=request.url.with_scheme("https"),
             )
         else:
-            site: URL = swap_url(
+            site = swap_url(
                 ignore_query=True,
                 old_url=self.access_url(),
                 new_url=self._host_url.with_path("/"),
@@ -237,7 +238,7 @@ class AuthCaptureProxy:
             self.all_handler_active = False
             if self.active:
                 asyncio.create_task(self.stop_proxy(3))
-            return web.Response(text=f"Proxy stopped.")
+            return web.Response(text="Proxy stopped.")
         elif (
             request.url.path == self._proxy_url.with_path(f"{self._proxy_url.path}/resume").path
             and self.last_resp
@@ -251,7 +252,7 @@ class AuthCaptureProxy:
                 self._proxy_url.with_path(f"{self._proxy_url.path}/resume").path,
             ]:
                 # either base path or resume without anything to resume
-                site: URL = URL(self._host_url)
+                site = URL(self._host_url)
                 if method == "get":
                     self.init_query = self.query.copy()
                     _LOGGER.debug(
@@ -338,7 +339,6 @@ class AuthCaptureProxy:
             host (Optional[Text], optional): The host interface to bind to. Defaults to None which is "0.0.0.0" all interfaces.
             ssl_context (Optional[SSLContext], optional): SSL Context for the server. Defaults to None.
         """
-
         app = web.Application()
         app.add_routes(
             [
@@ -382,7 +382,7 @@ class AuthCaptureProxy:
         _LOGGER.debug("Proxy stopped")
 
     def _swap_proxy_and_host(self, text: Text, domain_only: bool = False) -> Text:
-        """Replace host with proxy address or proxy with host address
+        """Replace host with proxy address or proxy with host address.
 
         Args
             text (Text): text to replace
@@ -444,11 +444,13 @@ class AuthCaptureProxy:
             result.pop("Host")
         if result.get("Origin"):
             result["Origin"] = f"{site.with_path('')}"
-        if result.get("Referer") and URL(result.get("Referer")).query == self.init_query:
+        if result.get("Referer") and URL(result.get("Referer", "")).query == self.init_query:
             # Change referer for starting request; this may have query items we shouldn't pass
             result["Referer"] = str(self._host_url)
         elif result.get("Referer"):
-            result["Referer"] = self._swap_proxy_and_host(result.get("Referer"), domain_only=True)
+            result["Referer"] = self._swap_proxy_and_host(
+                result.get("Referer", ""), domain_only=True
+            )
         for item in ["X-Forwarded-For", "X-Forwarded-Proto", "X-Forwarded-Scheme", "X-Real-IP"]:
             # remove proxy headers
             if result.get(item):

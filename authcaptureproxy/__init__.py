@@ -61,6 +61,7 @@ class AUTHCAPTUREPROXYAssets:
         path = Path(__file__.parent, "resources", *nodes)
         if not path.exists():
             raise FileNotFoundError(f"Asset {path} not found")
+        return path
 
 
 if __name__ == "__main__":  # pragma: no cover
