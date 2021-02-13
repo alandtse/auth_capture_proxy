@@ -52,6 +52,54 @@ def print_resp(resp: ClientResponse) -> None:
     )
 
 
+def swap_url(
+    ignore_query: bool = True,
+    old_url: URL = URL(""),
+    new_url: URL = URL(""),
+    url: URL = URL(""),
+) -> URL:
+    """Swap any instances of the old url with the new url. Will not replace query info.
+
+    Args:
+        ignore_query (bool): Whether the url.query should be ignored. Defaults to True.
+        old_url (URL): Old url to find and replace. If there is any additional path, it will be added to the new_url.
+        new_url (URL): New url to replace.
+        url (URL): url to modify
+    """
+    for arg in [old_url, new_url, url]:
+        if isinstance(arg, str):
+            arg = URL(arg)
+    old_url_string: Text = str(old_url.with_query({}))
+    new_url_string: Text = str(new_url.with_query({}))
+    old_query: Dict[Text, Text] = url.query
+    url_string = str(url.with_query({}))
+    # ensure both paths end with "/" if one of them does
+    if (
+        new_url_string
+        and new_url_string[-1] == "/"
+        and old_url_string
+        and old_url_string[-1] != "/"
+    ):
+        old_url_string += "/"
+    elif (
+        old_url_string
+        and old_url_string[-1] == "/"
+        and new_url_string
+        and new_url_string[-1] != "/"
+    ):
+        new_url_string += "/"
+    if ignore_query:
+        result = URL(url_string.replace(old_url_string, new_url_string))
+        # clean up any // in path
+        return result.with_path(result.path.replace("//", "/")).with_query(old_query)
+    new_query = {}
+    for key, value in old_query.items():
+        if value:
+            new_query[key] = value.replace(old_url_string, new_url_string)
+    result = URL(url_string.replace(old_url_string, new_url_string))
+    return result.with_path(result.path.replace("//", "/")).update_query(new_query)
+
+
 def prepend_url(base_url: URL, url: URL) -> URL:
     """Prepend the url.
 
