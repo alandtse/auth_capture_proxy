@@ -50,3 +50,20 @@ def print_resp(resp: ClientResponse) -> None:
         reason,
         resp.headers,
     )
+
+
+def prepend_url(base_url: URL, url: URL) -> URL:
+    """Prepend the url.
+
+    Args:
+        base_url (URL): Base URL to prepend
+        url (URL): url to prepend
+    """
+    for arg in [base_url, url]:
+        if isinstance(arg, str):
+            arg = URL(arg)
+    if not url.is_absolute():
+        query = url.query
+        path = url.path
+        return base_url.with_path(f"{base_url.path}{path}".replace("//", "/")).with_query(query)
+    return url
