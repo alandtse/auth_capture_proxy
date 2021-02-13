@@ -16,8 +16,10 @@ except ModuleNotFoundError:
 # and then list importlib_metadata to [tool.poetry.dependencies] and docs/requirements.txt
 from pathlib import Path
 
-from .auth_capture_proxy import AuthCaptureProxy
-from .stackoverflow import return_timer_countdown_refresh_html
+from authcaptureproxy.auth_capture_proxy import AuthCaptureProxy
+from authcaptureproxy.examples.modifiers import find_regex_urls
+from authcaptureproxy.helper import prepend_url
+from authcaptureproxy.stackoverflow import return_timer_countdown_refresh_html
 
 pkg = Path(__file__).absolute().parent.name
 logger = logging.getLogger(pkg)
@@ -71,4 +73,8 @@ if __name__ == "__main__":  # pragma: no cover
         print(f"Unknown project info for {pkg}")
 
 
-__all__ = ["AuthCaptureProxy", "return_timer_countdown_refresh_html"]
+__all__ = [
+    "AuthCaptureProxy",
+    "return_timer_countdown_refresh_html",
+    "find_regex_urls",
+]
