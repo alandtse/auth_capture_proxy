@@ -1,13 +1,14 @@
 #  SPDX-License-Identifier: Apache-2.0
 """Python Package for auth capture proxy."""
+import asyncio
 import logging
+from functools import partial
+from ssl import SSLContext
 from typing import Any, Callable, Dict, Optional, Text
 
-import asyncio
-from aiohttp import web, ClientSession, ClientConnectionError, TooManyRedirects
-from aiohttp.client_reqrep import ClientResponse
 import multidict
-from ssl import SSLContext
+from aiohttp import ClientConnectionError, ClientSession, TooManyRedirects, web
+from aiohttp.client_reqrep import ClientResponse
 from yarl import URL
 
 from authcaptureproxy.helper import run_func
@@ -207,8 +208,15 @@ class AuthCaptureProxy:
         _LOGGER.debug("%s: %s", method, request.url)
         self.query.update(request.query)
         data = await request.post()
+        json_data = None
+        if request.has_body:
+            json_data = await request.json()
         if data:
-            self.data.update(await request.post())
+            self.data.update(data)
+            _LOGGER.debug("Storing data %s", data)
+        elif json_data:
+            self.data.update(json_data)
+            _LOGGER.debug("Storing json %s", json_data)
         if request.url.path == self._proxy_url.with_path(f"{self._proxy_url.path}/stop").path:
             self.all_handler_active = False
             if self.active:
@@ -233,13 +241,37 @@ class AuthCaptureProxy:
                     "Starting auth capture proxy for %s",
                     self._host_url,
                 )
-            headers = self._change_headers(site, request)
-            _LOGGER.debug("Attempting %s to %s", method, site)
+            headers = await self.modify_headers(site, request)
+            _LOGGER.debug(
+                "Attempting %s to %s: \n headers:%s \ncookies: %s",
+                method,
+                site,
+                headers,
+                self.session.cookie_jar.filter_cookies(URL(site)),
+            )
             try:
                 if data:
-                    resp = await getattr(self.session, method)(site, data=data, headers=headers)
+                    resp = await getattr(self.session, method)(
+                        site,
+                        data=data,
+                        headers=headers,
+                    )
+                elif json_data:
+                    for item in ["Host", "Origin", "User-Agent", "dnt", "Accept-Encoding"]:
+                        # remove proxy headers
+                        if headers.get(item):
+                            headers.pop(item)
+                    resp = await getattr(self.session, method)(
+                        site,
+                        json=json_data,
+                        headers=headers,
+                        # apparently headers aren't needed for Tesla case?
+                    )
                 else:
-                    resp = await getattr(self.session, method)(site, headers=headers)
+                    resp = await getattr(self.session, method)(
+                        site,
+                        headers=headers,
+                    )
             except ClientConnectionError as ex:
                 return web.Response(text=f"Error connecting to {site}; please retry: {ex}")
             except TooManyRedirects as ex:
@@ -365,7 +397,16 @@ class AuthCaptureProxy:
             _LOGGER.debug("Unable to find %s and %s in %s", host_string, proxy_string, text)
             return text
 
-    def _change_headers(self, site: URL, request: web.Request) -> multidict.MultiDict:
+    async def modify_headers(self, site: URL, request: web.Request) -> multidict.MultiDict:
+        """Modify headers.
+
+        Args:
+            site (URL): URL of the next host request.
+            request (web.Request): Proxy directed request. This will need to be changed for the actual host request.
+
+        Returns:
+            multidict.MultiDict: Headers after modifications
+        """
         # necessary since MultiDict.update did not appear to work
         headers = multidict.MultiDict(request.headers)
         result = {}
@@ -381,6 +422,10 @@ class AuthCaptureProxy:
             result["Referer"] = str(self._host_url)
         elif result.get("Referer"):
             result["Referer"] = self._swap_proxy_and_host(result.get("Referer"), domain_only=True)
+        for item in ["X-Forwarded-For", "X-Forwarded-Proto", "X-Forwarded-Scheme", "X-Real-IP"]:
+            # remove proxy headers
+            if result.get(item):
+                result.pop(item)
         # _LOGGER.debug("Final headers %s", result)
         result.update(self.headers if self.headers else {})
-        return result
+        return multidict.MultiDict(result)
