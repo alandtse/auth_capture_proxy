@@ -8,7 +8,7 @@ https://www.sphinx-doc.org/en/master/usage/configuration.html
 from pathlib import Path
 from typing import Optional, Type, TypeVar
 
-import tomlkit
+import tomlkit  # type: ignore[import]
 
 # This assumes that we have the full project root above, containing pyproject.toml
 _root = Path(__file__).parent.parent.absolute()

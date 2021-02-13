@@ -33,3 +33,4 @@ def test_amazon(
         if callback_url:
             return URL(callback_url)
         return f"Successfully received token:{access_token} for flow {config_flow_id}. Please close the window."
+    return None

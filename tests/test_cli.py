@@ -1,13 +1,12 @@
 #  SPDX-License-Identifier: Apache-2.0
 """
-Copyright 2021 Alan D. Tse
+Copyright 2021 Alan D. Tse.
 
 """
 import pytest
 
 from authcaptureproxy import __copyright__
 from authcaptureproxy import cli
-from . import TestResources
 
 
 class TestCli:

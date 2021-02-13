@@ -1,16 +1,18 @@
 #  SPDX-License-Identifier: Apache-2.0
 """Python Package for auth capture proxy."""
+import asyncio
 import logging
+from functools import partial
+from ssl import SSLContext
 from typing import Any, Callable, Dict, Optional, Text
 
-import asyncio
-from aiohttp import web, ClientSession, ClientConnectionError, TooManyRedirects
-from aiohttp.client_reqrep import ClientResponse
 import multidict
-from ssl import SSLContext
+from aiohttp import ClientConnectionError, ClientSession, TooManyRedirects, web
+from aiohttp.client_reqrep import ClientResponse
 from yarl import URL
 
-from authcaptureproxy.helper import print_resp
+from authcaptureproxy.examples.modifiers import prepend_relative_urls, replace_matching_urls
+from authcaptureproxy.helper import print_resp, run_func, swap_url
 from authcaptureproxy.stackoverflow import get_open_port
 
 _LOGGER = logging.getLogger(__name__)
@@ -19,7 +21,8 @@ _LOGGER = logging.getLogger(__name__)
 class AuthCaptureProxy:
     """Class to handle proxy login connections.
 
-    This class relies on tests to be provided to indicate the proxy has completed. At proxy completion all data can be found in self.session, self.data, and self.query."""
+    This class relies on tests to be provided to indicate the proxy has completed. At proxy completion all data can be found in self.session, self.data, and self.query.
+    """
 
     def __init__(
         self, proxy_url: URL, host_url: URL, session: Optional[ClientSession] = None
@@ -41,10 +44,18 @@ class AuthCaptureProxy:
         self.init_query: Dict[Text, Any] = {}
         self.query: Dict[Text, Any] = {}
         self.data: Dict[Text, Any] = {}
+        # tests and modifiers should be initialized after port is actually assigned and not during init.
+        # however, to ensure defaults go first, they should have a dummy key set
         self._tests: Dict[Text, Callable] = {}
-        self._modifiers: Dict[Text, Callable] = {}
+        self._modifiers: Dict[Text, Callable] = {
+            "prepend_relative_urls": lambda x: x,
+            "change_host_to_proxy": lambda x: x,
+        }
+        self._old_tests: Dict[Text, Callable] = {}
+        self._old_modifiers: Dict[Text, Callable] = {}
         self._active = False
         self._all_handler_active = True
+        self.headers: Dict[Text, Text] = {}
 
     @property
     def active(self) -> bool:
@@ -81,6 +92,8 @@ class AuthCaptureProxy:
         Args:
             value (Dict[Text, Any]): A dictionary of tests.
         """
+        self.refresh_tests()  # refresh in case of pending change
+        self._old_tests = self._tests.copy()
         self._tests = value
 
     @property
@@ -98,7 +111,13 @@ class AuthCaptureProxy:
         Args:
             value (Dict[Text, Any]): A dictionary of tests.
         """
+        self.refresh_modifiers()  # refresh in case of pending change
+        self._old_modifiers = self._modifiers
         self._modifiers = value
+
+    def access_url(self) -> URL:
+        """Return access url for proxy with port."""
+        return self._proxy_url.with_port(self.port)
 
     async def change_host_url(self, new_url: URL) -> None:
         """Change the host url of the proxy.
@@ -111,7 +130,7 @@ class AuthCaptureProxy:
         if not isinstance(new_url, URL):
             raise ValueError("URL required")
         self._host_url = new_url
-        await self.reset_data
+        await self.reset_data()
 
     async def reset_data(self) -> None:
         """Reset all stored data.
@@ -131,9 +150,36 @@ class AuthCaptureProxy:
         self._all_handler_active = True
         _LOGGER.debug("Proxy data reset.")
 
-    def access_url(self) -> URL:
-        """Return access url for proxy with port."""
-        return self._proxy_url.with_port(self.port)
+    def refresh_tests(self) -> None:
+        """Refresh tests.
+
+        Because tests may use partials, they will freeze their parameters which is a problem with self.access() if the port hasn't been assigned.
+        """
+        if self._tests != self._old_tests:
+            self.tests.update({})
+            self.old_tests = self.tests.copy()
+            _LOGGER.debug("Refreshed %s tests: %s", len(self.tests), list(self.tests.keys()))
+
+    def refresh_modifiers(self) -> None:
+        """Refresh modifiers.
+
+        Because modifiers may use partials, they will freeze their parameters which is a problem with self.access() if the port hasn't been assigned.
+        """
+        if self._modifiers != self._old_modifiers:
+            self.modifiers.update(
+                {
+                    "prepend_relative_urls": partial(prepend_relative_urls, self.access_url()),
+                    "change_host_to_proxy": partial(
+                        replace_matching_urls,
+                        self._host_url.with_query({}).with_path("/"),
+                        self.access_url(),
+                    ),
+                }
+            )
+            self._old_modifiers = self.modifiers.copy()
+            _LOGGER.debug(
+                "Refreshed %s modifiers: %s", len(self.modifiers), list(self.modifiers.keys())
+            )
 
     async def all_handler(self, request: web.Request, **kwargs) -> web.Response:
         """Handle all requests.
@@ -156,19 +202,43 @@ class AuthCaptureProxy:
             raise web.HTTPNotFound()
         if not self.session:
             self.session = ClientSession()
+        self.refresh_tests()
+        self.refresh_modifiers()
         method = request.method.lower()
+        _LOGGER.debug("Received %s: %s", method, request.url)
         resp: Optional[ClientResponse] = None
-        site = URL(self._swap_proxy_and_host(str(request.url)))
-        _LOGGER.debug("%s: %s", method, request.url)
+        if request.scheme == "http" and self.access_url().scheme == "https":
+            # detect reverse proxy downgrade
+            _LOGGER.debug("Detected http while should be https; switching to https")
+            site: URL = swap_url(
+                ignore_query=True,
+                old_url=self.access_url(),
+                new_url=self._host_url.with_path("/"),
+                url=request.url.with_scheme("https"),
+            )
+        else:
+            site = swap_url(
+                ignore_query=True,
+                old_url=self.access_url(),
+                new_url=self._host_url.with_path("/"),
+                url=request.url,
+            )
         self.query.update(request.query)
         data = await request.post()
+        json_data = None
+        if request.has_body:
+            json_data = await request.json()
         if data:
-            self.data.update(await request.post())
+            self.data.update(data)
+            _LOGGER.debug("Storing data %s", data)
+        elif json_data:
+            self.data.update(json_data)
+            _LOGGER.debug("Storing json %s", json_data)
         if request.url.path == self._proxy_url.with_path(f"{self._proxy_url.path}/stop").path:
             self.all_handler_active = False
             if self.active:
                 asyncio.create_task(self.stop_proxy(3))
-            return web.Response(text=f"Proxy stopped.")
+            return web.Response(text="Proxy stopped.")
         elif (
             request.url.path == self._proxy_url.with_path(f"{self._proxy_url.path}/resume").path
             and self.last_resp
@@ -182,19 +252,44 @@ class AuthCaptureProxy:
                 self._proxy_url.with_path(f"{self._proxy_url.path}/resume").path,
             ]:
                 # either base path or resume without anything to resume
-                site: URL = self._host_url
-                self.init_query = self.query.copy()
-                _LOGGER.debug(
-                    "Starting auth capture proxy for %s",
-                    self._host_url,
-                )
-            headers = self._change_headers(site, request)
-            _LOGGER.debug("Attempting %s to %s", method, site)
+                site = URL(self._host_url)
+                if method == "get":
+                    self.init_query = self.query.copy()
+                    _LOGGER.debug(
+                        "Starting auth capture proxy for %s",
+                        self._host_url,
+                    )
+            headers = await self.modify_headers(site, request)
+            _LOGGER.debug(
+                "Attempting %s to %s: \n headers:%s \ncookies: %s",
+                method,
+                site,
+                headers,
+                self.session.cookie_jar.filter_cookies(URL(site)),
+            )
             try:
                 if data:
-                    resp = await getattr(self.session, method)(site, data=data, headers=headers)
+                    resp = await getattr(self.session, method)(
+                        site,
+                        data=data,
+                        headers=headers,
+                    )
+                elif json_data:
+                    for item in ["Host", "Origin", "User-Agent", "dnt", "Accept-Encoding"]:
+                        # remove proxy headers
+                        if headers.get(item):
+                            headers.pop(item)
+                    resp = await getattr(self.session, method)(
+                        site,
+                        json=json_data,
+                        headers=headers,
+                        # apparently headers aren't needed for Tesla case?
+                    )
                 else:
-                    resp = await getattr(self.session, method)(site, headers=headers)
+                    resp = await getattr(self.session, method)(
+                        site,
+                        headers=headers,
+                    )
             except ClientConnectionError as ex:
                 return web.Response(text=f"Error connecting to {site}; please retry: {ex}")
             except TooManyRedirects as ex:
@@ -206,14 +301,9 @@ class AuthCaptureProxy:
         if self.tests:
             for test_name, test in self.tests.items():
                 result = None
-                if asyncio.iscoroutinefunction(test):
-                    _LOGGER.debug("Running coroutine test %s", test_name)
-                    result = await test(resp, self.data, self.query)
-                else:
-                    _LOGGER.debug("Running function test %s", test_name)
-                    result = test(resp, self.data, self.query)
+                result = await run_func(test, test_name, resp, self.data, self.query)
                 if result:
-                    _LOGGER.debug("Test %s reports success", test_name)
+                    _LOGGER.debug("Test %s triggered", test_name)
                     if isinstance(result, URL):
                         _LOGGER.debug(
                             "Redirecting to callback: %s",
@@ -221,29 +311,24 @@ class AuthCaptureProxy:
                         )
                         raise web.HTTPFound(location=result)
                     elif isinstance(result, str):
-                        _LOGGER.debug("Displaying success page: %s", result)
-                        return web.Response(
-                            text=result,
-                        )
+                        _LOGGER.debug("Displaying page:\n%s", result)
+                        return web.Response(text=result, content_type="text/html")
         else:
             _LOGGER.warning("Proxy has no tests; please set.")
         content_type = resp.content_type
         if content_type == "text/html":
-            text = self._swap_proxy_and_host(await resp.text())
+            text = await resp.text()
             if self.modifiers:
                 for name, modifier in self.modifiers.items():
-                    if asyncio.iscoroutinefunction(modifier):
-                        _LOGGER.debug("Applied coroutine modifier: %s", name)
-                        text = await modifier(text)
-                    else:
-                        _LOGGER.debug("Applied function modifier: %s", name)
-                        text = modifier(text)
+                    text = await run_func(modifier, name, text)
+            # _LOGGER.debug("Returning modified text:\n%s", text)
             return web.Response(
                 text=text,
                 content_type=content_type,
             )
         # handle non html content
-        return web.Response(body=await resp.content.read(), content_type=content_type)
+        _LOGGER.debug("Passing through %s", content_type)
+        return web.Response(body=await resp.read(), content_type=content_type)
 
     async def start_proxy(
         self, host: Optional[Text] = None, ssl_context: Optional[SSLContext] = None
@@ -254,7 +339,6 @@ class AuthCaptureProxy:
             host (Optional[Text], optional): The host interface to bind to. Defaults to None which is "0.0.0.0" all interfaces.
             ssl_context (Optional[SSLContext], optional): SSL Context for the server. Defaults to None.
         """
-
         app = web.Application()
         app.add_routes(
             [
@@ -284,11 +368,21 @@ class AuthCaptureProxy:
             return
         _LOGGER.debug("Stopping proxy at %s after %s seconds", self.access_url(), delay)
         await asyncio.sleep(delay)
+        _LOGGER.debug("Closing site runner")
         await self.runner.cleanup()
         await self.runner.shutdown()
+        _LOGGER.debug("Site runner closed")
+        # close session
+        if self.session and not self.session.closed:
+            _LOGGER.debug("Closing session")
+            if self.session._connector_owner:
+                await self.session._connector.close()
+            _LOGGER.debug("Session closed")
+        self._active = False
+        _LOGGER.debug("Proxy stopped")
 
     def _swap_proxy_and_host(self, text: Text, domain_only: bool = False) -> Text:
-        """Replace host with proxy address or proxy with host address
+        """Replace host with proxy address or proxy with host address.
 
         Args
             text (Text): text to replace
@@ -302,24 +396,44 @@ class AuthCaptureProxy:
         proxy_string: Text = str(
             self.access_url() if not domain_only else self.access_url().with_path("/")
         )
-        if not proxy_string or proxy_string == "/" or proxy_string[-1] != "/":
-            proxy_string = f"{proxy_string}/"
-        if proxy_string in text:
-            _LOGGER.debug("Replacing %s with %s", proxy_string, host_string)
-            return text.replace(proxy_string, host_string)
-        elif proxy_string.replace("https", "http") in text:
+        if str(self.access_url().with_path("/")).replace("https", "http") in text:
             _LOGGER.debug(
-                "Replacing %s with %s", proxy_string.replace("https", "http"), host_string
+                "Replacing %s with %s",
+                str(self.access_url().with_path("/")).replace("https", "http"),
+                str(self.access_url().with_path("/")),
             )
-            return text.replace(proxy_string.replace("https", "http"), host_string)
+            text = text.replace(
+                str(self.access_url().with_path("/")).replace("https", "http"),
+                str(self.access_url().with_path("/")),
+            )
+        if proxy_string in text:
+            if host_string[-1] == "/" and (
+                not proxy_string or proxy_string == "/" or proxy_string[-1] != "/"
+            ):
+                proxy_string = f"{proxy_string}/"
+            _LOGGER.debug("Replacing %s with %s in %s", proxy_string, host_string, text)
+            return text.replace(proxy_string, host_string)
         elif host_string in text:
+            if host_string[-1] == "/" and (
+                not proxy_string or proxy_string == "/" or proxy_string[-1] != "/"
+            ):
+                proxy_string = f"{proxy_string}/"
             _LOGGER.debug("Replacing %s with %s", host_string, proxy_string)
             return text.replace(host_string, proxy_string)
         else:
             _LOGGER.debug("Unable to find %s and %s in %s", host_string, proxy_string, text)
             return text
 
-    def _change_headers(self, site: URL, request: web.Request) -> multidict.MultiDict:
+    async def modify_headers(self, site: URL, request: web.Request) -> multidict.MultiDict:
+        """Modify headers.
+
+        Args:
+            site (URL): URL of the next host request.
+            request (web.Request): Proxy directed request. This will need to be changed for the actual host request.
+
+        Returns:
+            multidict.MultiDict: Headers after modifications
+        """
         # necessary since MultiDict.update did not appear to work
         headers = multidict.MultiDict(request.headers)
         result = {}
@@ -330,10 +444,17 @@ class AuthCaptureProxy:
             result.pop("Host")
         if result.get("Origin"):
             result["Origin"] = f"{site.with_path('')}"
-        if result.get("Referer") and URL(result.get("Referer")).query == self.init_query:
-            # Remove referer for starting request; this may have query items we shouldn't pass
-            result.pop("Referer")
+        if result.get("Referer") and URL(result.get("Referer", "")).query == self.init_query:
+            # Change referer for starting request; this may have query items we shouldn't pass
+            result["Referer"] = str(self._host_url)
         elif result.get("Referer"):
-            result["Referer"] = self._swap_proxy_and_host(result.get("Referer"), domain_only=True)
+            result["Referer"] = self._swap_proxy_and_host(
+                result.get("Referer", ""), domain_only=True
+            )
+        for item in ["X-Forwarded-For", "X-Forwarded-Proto", "X-Forwarded-Scheme", "X-Real-IP"]:
+            # remove proxy headers
+            if result.get(item):
+                result.pop(item)
         # _LOGGER.debug("Final headers %s", result)
-        return result
+        result.update(self.headers if self.headers else {})
+        return multidict.MultiDict(result)
