@@ -94,12 +94,13 @@ async def prepend_relative_urls(base_url: URL, html: Text) -> Text:
 async def find_regex_urls(
     modifier: Optional[Callable] = None, patterns: Dict[Text, Text] = "", html: Text = ""
 ) -> Text:
-    """Find urls for strings that look like function calls ("GET", "url",...), ("POST", "url", ...).
+    """Find urls for based on regex.
 
     Seen in Tesla login with MFA enabled.
 
     Args:
         modifier (Optional[Callable], optional): The function to call. It will take in the html_tag, tag, and attribute and modify the html_tag. Defaults to None.
+        patterns ([Dict[Text,Text]): A dictionary of regex patterns to search. Key is name and value is regex string.
         html (Text, optional): Text to replace. Defaults to "".
 
     Returns:
