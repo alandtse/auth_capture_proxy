@@ -80,7 +80,7 @@ async def run_func(func: Callable, name: Text = "", *args, **kwargs) -> Any:
                 name = unknown_name
     if (
         iscoroutinefunction(func)
-        or getattr(func, "func")
+        or getattr(func, "func", None)
         and iscoroutinefunction(getattr(func, "func"))
     ):
         _LOGGER.debug("Running coroutine %s", name)
