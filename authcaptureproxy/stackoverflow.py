@@ -40,8 +40,8 @@ def return_timer_countdown_refresh_html(seconds: int, text: Text) -> Text:
     """
     return f"""<html><head></head><body>{text}<div id="countdown"></div></body>
     <script defer="defer">(function countdown(remaining) {{
-    if(remaining === 0)
+    if(remaining < 0)
         location.reload(true);
-    document.getElementById('countdown').innerHTML = 'Automaticaly reloading page in ' + remaining + ' seconds.';
+    document.getElementById('countdown').innerHTML = 'Automaticaly reloading page in ' + Math.floor(Math.min(remaining, 0)) + ' seconds.';
     setTimeout(function(){{ countdown(remaining - 1); }}, 1000);
     }})({seconds});</script></html>"""
