@@ -249,12 +249,13 @@ class AuthCaptureProxy:
                 self._proxy_url.with_path(f"{self._proxy_url.path}/resume").path,
             ]:
                 # either base path or resume without anything to resume
-                site: URL = self._host_url
-                self.init_query = self.query.copy()
-                _LOGGER.debug(
-                    "Starting auth capture proxy for %s",
-                    self._host_url,
-                )
+                site: URL = URL(self._host_url)
+                if method == "get":
+                    self.init_query = self.query.copy()
+                    _LOGGER.debug(
+                        "Starting auth capture proxy for %s",
+                        self._host_url,
+                    )
             headers = await self.modify_headers(site, request)
             _LOGGER.debug(
                 "Attempting %s to %s: \n headers:%s \ncookies: %s",
