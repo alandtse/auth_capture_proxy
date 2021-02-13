@@ -204,8 +204,22 @@ class AuthCaptureProxy:
         self.refresh_modifiers()
         method = request.method.lower()
         resp: Optional[ClientResponse] = None
-        site = URL(self._swap_proxy_and_host(str(request.url)))
-        _LOGGER.debug("%s: %s", method, request.url)
+        if request.scheme == "http" and self.access_url().scheme == "https":
+            # detect reverse proxy downgrade
+            _LOGGER.debug("Detected http while should be https; switching to https")
+            site: URL = swap_url(
+                ignore_query=True,
+                old_url=self.access_url(),
+                new_url=self._host_url.with_path("/"),
+                url=request.url.with_scheme("https"),
+            )
+        else:
+            site: URL = swap_url(
+                ignore_query=True,
+                old_url=self.access_url(),
+                new_url=self._host_url.with_path("/"),
+                url=request.url,
+            )
         self.query.update(request.query)
         data = await request.post()
         json_data = None
