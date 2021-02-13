@@ -3,28 +3,74 @@
 <!--next-version-placeholder-->
 
 ## v0.4.0 (2021-02-13)
+
 ### Feature
-* Add github_token to ci ([`79628ca`](https://github.com/alandtse/auth_capture_proxy/commit/79628ca2aea8142bce5699d169098c474b3b6595))
+
+- Add github_token to ci ([`79628ca`](https://github.com/alandtse/auth_capture_proxy/commit/79628ca2aea8142bce5699d169098c474b3b6595))
+- Dump all info from cli example ([`9d6cd3a`](https://github.com/alandtse/auth_capture_proxy/commit/9d6cd3a98d276ced9c5c6c3d5a22ecbd5caa02f2))
+- Allow modification of headers ([`2e9fc74`](https://github.com/alandtse/auth_capture_proxy/commit/2e9fc74ccfc40979747c286a1bdf6069f27e401d))
+- Add run_func helper function ([`6d6ecd6`](https://github.com/alandtse/auth_capture_proxy/commit/6d6ecd68c988a1e3f76730971749f64c0c4408d2))
+- Add swap_url helper ([`8ab7e9f`](https://github.com/alandtse/auth_capture_proxy/commit/8ab7e9ff5e2bc615e3e839c2006ba788058d7e37))
+- Add prepend_url function ([`afb23bb`](https://github.com/alandtse/auth_capture_proxy/commit/afb23bb7b39b6ad2eeb2892d9ee29299138068b9))
+- Output resp headers as json ([`bd3ba5a`](https://github.com/alandtse/auth_capture_proxy/commit/bd3ba5a7a9ce310bde64781a1d6a67e2fb53f5f9))
+- Allow float delays for timer ([`70958da`](https://github.com/alandtse/auth_capture_proxy/commit/70958daaba3ef2542ae18dd2c1ca289b05c860d5))
+- Allow setting of headers ([`1703d1b`](https://github.com/alandtse/auth_capture_proxy/commit/1703d1b285a330770cf355118e2ad4e43bb8ffdb))
+- Add return_time_countdow_refresh_html ([`57d71f5`](https://github.com/alandtse/auth_capture_proxy/commit/57d71f58c79ccc84324ea10808de2132199024f2))
+- **cli:** Add debug option to display to stderr ([`c554e1e`](https://github.com/alandtse/auth_capture_proxy/commit/c554e1e6e228703b9042482da0e0bc3046be7013))
+- **cli:** Add timeout option ([`b7eb672`](https://github.com/alandtse/auth_capture_proxy/commit/b7eb67296fe4629a664432c213f5787851ba3a99))
+
+### Fix
+
+- Show 0 as smallest timer ([`1277c88`](https://github.com/alandtse/auth_capture_proxy/commit/1277c883e1f41e9e435813b35cef440a1e4ab2a9))
+- Call reset_data ([`dfc6ba9`](https://github.com/alandtse/auth_capture_proxy/commit/dfc6ba9c41719175882363f0189bf3703f3c404e))
+- Fix attribute error when not partial function ([`304f833`](https://github.com/alandtse/auth_capture_proxy/commit/304f833e830de3dcfc7dc950138af40fee5eb408))
+- Allow successful test to return html ([`b1f20df`](https://github.com/alandtse/auth_capture_proxy/commit/b1f20df6fc0f44a5c9bc2891cca0c2edd3c09361))
+- Treat only get to starting url as start ([`4f64265`](https://github.com/alandtse/auth_capture_proxy/commit/4f642651ec32adac7185385a42bae976e9447c16))
+- Handle http request downgrade ([`4b795b4`](https://github.com/alandtse/auth_capture_proxy/commit/4b795b41172ca762cada03d94b312284efc0f8d8))
+- Refresh tests and modifiers ([`e140699`](https://github.com/alandtse/auth_capture_proxy/commit/e140699ebdc22d104807ebf4127c394bfceef227))
+- Set initial header referer to start site ([`ff3c568`](https://github.com/alandtse/auth_capture_proxy/commit/ff3c5685d9c89d3a9b7bd841870fe254a03c9bd0))
+- Shutdown clientsession on close ([`dc6b8d1`](https://github.com/alandtse/auth_capture_proxy/commit/dc6b8d1d360fc789deaeabd610830ab3513a1341))
+- **cli:** Ensure tests and modifiers have port ([`0a57143`](https://github.com/alandtse/auth_capture_proxy/commit/0a57143e1b750817d934fa7892448c02b4e0fc96))
+
+### Documentation
+
+- Update find_regex_url docstring ([`c15b307`](https://github.com/alandtse/auth_capture_proxy/commit/c15b30737b46f6933409341ffd9556291688e060))
+- Update download badges ([`a8aa662`](https://github.com/alandtse/auth_capture_proxy/commit/a8aa6629c58ea00481d7a039106b2679627a083d))
+
+### Refactor
+
+- Switch url swap to modifier ([`b515e96`](https://github.com/alandtse/auth_capture_proxy/commit/b515e96801b3837028aa1a73b5249195023b95b1))
+- **docs:** Fix spacing ([`bc0e291`](https://github.com/alandtse/auth_capture_proxy/commit/bc0e291b23fa169020e6b269a78d395a7cbdf8ba))
 
 ## v0.3.2 (2021-02-08)
+
 ### Fix
-* Add download badge ([`0f03af4`](https://github.com/alandtse/auth_capture_proxy/commit/0f03af42883a0ef8ab0567db5eced3be9403d2cb))
+
+- Add download badge ([`0f03af4`](https://github.com/alandtse/auth_capture_proxy/commit/0f03af42883a0ef8ab0567db5eced3be9403d2cb))
 
 ## v0.3.1 (2021-02-07)
+
 ### Fix
-* Handle http downgrade by nginx proxy ([`186dcf0`](https://github.com/alandtse/auth_capture_proxy/commit/186dcf0dded7610d7a16be2437286b61ad042599))
+
+- Handle http downgrade by nginx proxy ([`186dcf0`](https://github.com/alandtse/auth_capture_proxy/commit/186dcf0dded7610d7a16be2437286b61ad042599))
 
 ## v0.3.0 (2021-02-07)
+
 ### Feature
-* Add change_host_url ([`fe6226e`](https://github.com/alandtse/auth_capture_proxy/commit/fe6226ee9cc9f6a1aecf6cf84e963ab6ad8470c7))
+
+- Add change_host_url ([`fe6226e`](https://github.com/alandtse/auth_capture_proxy/commit/fe6226ee9cc9f6a1aecf6cf84e963ab6ad8470c7))
 
 ## v0.2.0 (2021-02-06)
+
 ### Feature
-* Add modifiers to cli example ([`eae4030`](https://github.com/alandtse/auth_capture_proxy/commit/eae4030ba4f47468563e1abdaa186ed221eeb42d))
+
+- Add modifiers to cli example ([`eae4030`](https://github.com/alandtse/auth_capture_proxy/commit/eae4030ba4f47468563e1abdaa186ed221eeb42d))
 
 ## v0.1.2 (2021-02-05)
+
 ### Fix
-* Require python 3.6.1 to satisfy deps ([`ad948df`](https://github.com/alandtse/auth_capture_proxy/commit/ad948dff71de2ccd1d0555e129db07aeeb7fa890))
+
+- Require python 3.6.1 to satisfy deps ([`ad948df`](https://github.com/alandtse/auth_capture_proxy/commit/ad948dff71de2ccd1d0555e129db07aeeb7fa890))
 
 ## v0.1.2 (2021-02-04)
 
