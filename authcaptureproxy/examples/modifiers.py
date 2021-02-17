@@ -172,7 +172,7 @@ async def find_urls_bs4(
                 pattern = r"(?<=style=[\"']background-image:url\([\"']).*(?=[\"']\))"
                 attribute_value = html_tag.get(attribute)
                 url = URL(re.search(pattern, attribute_value))
-                if url and url not in exceptions.get(tag, []):
+                if url is not None and url not in exceptions.get(tag, []):
                     new_value = re.sub(
                         pattern,
                         await run_func(modifier, name="", url=url),
@@ -187,9 +187,9 @@ async def find_urls_bs4(
                             html_tag[attribute],
                         )
             else:
-                url = URL(html_tag.get(attribute)) if html_tag.get(attribute) else None
+                url = URL(html_tag.get(attribute)) if html_tag.get(attribute) is not None else None
                 if (
-                    url
+                    url is not None
                     and not str(url).startswith("data:")
                     and str(url) not in exceptions.get(tag, [])
                 ):
