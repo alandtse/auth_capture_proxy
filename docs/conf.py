@@ -82,9 +82,8 @@ html_theme_options = dict(
     collapse_navigation=False,
     navigation_depth=False,
     style_external_links=True,
-    today_fmt="%Y-%m-%d",
 )
-
+today_fmt = "%Y-%m-%d"
 exclude_patterns = ["_build", "Thumbs.db", ".*", "~*", "*~", "*#"]
 
 
