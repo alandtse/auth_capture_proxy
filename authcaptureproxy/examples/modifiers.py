@@ -206,7 +206,7 @@ async def find_urls_bs4(
                 # TODO: Rewrite regex to handle general case
                 pattern = r"(?<=style=[\"']background-image:url\([\"']).*(?=[\"']\))"
                 attribute_value = html_tag.get(attribute)
-                url = URL(re.search(pattern, attribute_value))
+                url: Optional[URL] = URL(str(re.search(pattern, attribute_value)))
                 if url is not None and url not in exceptions.get(tag, []):
                     new_value = re.sub(
                         pattern,

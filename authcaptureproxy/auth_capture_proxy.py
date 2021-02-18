@@ -42,8 +42,8 @@ class AuthCaptureProxy:
         self.session: ClientSession = session if session else ClientSession()
         self._proxy_url: URL = proxy_url
         self._host_url: URL = host_url
-        self._port: int = proxy_url.explicit_port if proxy_url.explicit_port else 0
-        self.runner: web.AppRunner = None
+        self._port: int = proxy_url.explicit_port if proxy_url.explicit_port else 0  # type: ignore
+        self.runner: Optional[web.AppRunner] = None
         self.last_resp: Optional[ClientResponse] = None
         self.init_query: Dict[Text, Any] = {}
         self.query: Dict[Text, Any] = {}
@@ -393,14 +393,16 @@ class AuthCaptureProxy:
         _LOGGER.debug("Stopping proxy at %s after %s seconds", self.access_url(), delay)
         await asyncio.sleep(delay)
         _LOGGER.debug("Closing site runner")
-        await self.runner.cleanup()
-        await self.runner.shutdown()
+        if self.runner:
+            await self.runner.cleanup()
+            await self.runner.shutdown()
         _LOGGER.debug("Site runner closed")
         # close session
         if self.session and not self.session.closed:
             _LOGGER.debug("Closing session")
             if self.session._connector_owner:
-                await self.session._connector.close()
+                if self.session._connector:
+                    await self.session._connector.close()
             _LOGGER.debug("Session closed")
         self._active = False
         _LOGGER.debug("Proxy stopped")

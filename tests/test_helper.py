@@ -1,6 +1,4 @@
 """Test the auth_capture proxy helper."""
-from unittest.mock import patch
-
 from yarl import URL
 
 import authcaptureproxy.helper as helper
@@ -27,7 +25,6 @@ def test_prepend_url_strings():
 
 def test_replace_empty_url_with_strings():
     """Test replace empty_url replaces empty urls."""
-
     assert VALID_URL == helper.replace_empty_url(str(VALID_URL), str(VALID_URL))
     assert VALID_URL == helper.replace_empty_url(str(VALID_URL), str(EMPTY_URL))
     assert VALID_URL == helper.replace_empty_url(
@@ -39,7 +36,6 @@ def test_replace_empty_url_with_strings():
 
 def test_replace_empty_url():
     """Test replace empty_url replaces empty urls with string arguments."""
-
     assert VALID_URL == helper.replace_empty_url(VALID_URL, VALID_URL)
     assert VALID_URL == helper.replace_empty_url(VALID_URL, EMPTY_URL)
     assert VALID_URL == helper.replace_empty_url(

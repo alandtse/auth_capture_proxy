@@ -1,7 +1,5 @@
 #  SPDX-License-Identifier: Apache-2.0
-"""
-Command-line interface for auth_capture_proxy.
-"""
+"""Command-line interface for auth_capture_proxy."""
 
 from __future__ import annotations
 
@@ -76,9 +74,9 @@ async def proxy_example(
     """
     if debug:
         logging.basicConfig(stream=sys.stderr, level=logging.DEBUG)
-    proxy_url = None
-    host_url = None
-    callback_url = None
+    proxy_url = URL()
+    host_url = URL()
+    callback_url = URL()
     if proxy:
         proxy_url = URL(proxy)
     if host:

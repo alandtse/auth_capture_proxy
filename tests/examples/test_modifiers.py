@@ -1,8 +1,7 @@
 """Test modifiers."""
-from unittest.mock import patch
 
 from yarl import URL
-from bs4 import BeautifulSoup as bs
+from bs4 import BeautifulSoup as bs  # type: ignore
 import authcaptureproxy.examples.modifiers as modifiers
 from typing import Text
 import random
@@ -111,10 +110,9 @@ def test_autofill_no_dict():
 
 
 def build_random_html(size: int = 10, url: Text = HOST_URL_WITH_PATH) -> Text:
-    """Builds random html."""
-
+    """Build random html."""
     soup = bs(FORM_WITH_DATA, "html.parser")
-    for i in range(size):
+    for _ in range(size):
         tag = random.choice(list(KNOWN_URLS_ATTRS))  # nosec
         attribute = KNOWN_URLS_ATTRS[tag]
         new_tag = soup.new_tag(tag, **{attribute: url})
