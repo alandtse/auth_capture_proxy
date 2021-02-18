@@ -346,8 +346,12 @@ class AuthCaptureProxy:
                 text=text,
                 content_type=content_type,
             )
-        # handle non html content
-        _LOGGER.debug("Passing through %s", content_type)
+        # pass through non parsed content
+        _LOGGER.debug(
+            "Passing through %s as %s",
+            request.url.name if request.url.name else request.url.path,
+            content_type,
+        )
         return web.Response(body=await resp.read(), content_type=content_type)
 
     async def start_proxy(
