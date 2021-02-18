@@ -154,6 +154,13 @@ async def find_urls_bs4(
     if not modifier:
         _LOGGER.debug("No modifier provided; returning unmodified")
         return html
+    for nested_html in soup.find_all("script", type="text/html"):
+        if nested_html.contents:
+            _LOGGER.debug(
+                "Found %s nested html content, searching nested content", len(nested_html.contents)
+            )
+        for content in nested_html.contents:
+            content.replace_with(await find_urls_bs4(modifier, search, exceptions, str(content)))
     search = search or {
         "script": "src",
         "link": "href",
