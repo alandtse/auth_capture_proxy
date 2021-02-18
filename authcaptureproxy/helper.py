@@ -102,9 +102,14 @@ def swap_url(
         new_url (URL): New url to replace.
         url (URL): url to modify
     """
-    for arg in [old_url, new_url, url]:
-        if isinstance(arg, str):
-            arg = URL(arg)
+    if isinstance(old_url, str):
+        old_url = URL(old_url)
+    if isinstance(url, str):
+        url = URL(url)
+    if isinstance(new_url, str):
+        new_url = URL(new_url)
+    if isinstance(url, str):
+        url = URL(url)
     old_url_string: Text = str(old_url.with_query({}))
     new_url_string: Text = str(new_url.with_query({}))
     old_query: MultiDict = url.query
@@ -143,9 +148,10 @@ def prepend_url(base_url: URL, url: URL) -> URL:
         base_url (URL): Base URL to prepend
         url (URL): url to prepend
     """
-    for arg in [base_url, url]:
-        if isinstance(arg, str):
-            arg = URL(arg)
+    if isinstance(base_url, str):
+        base_url = URL(base_url)
+    if isinstance(url, str):
+        url = URL(url)
     if not url.is_absolute():
         query = url.query
         path = url.path
