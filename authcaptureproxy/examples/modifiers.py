@@ -12,7 +12,7 @@ from typing import Callable, Dict, List, Optional, Text
 from bs4 import BeautifulSoup  # type: ignore[import]
 from yarl import URL
 
-from authcaptureproxy.helper import prepend_url, run_func, swap_url
+from authcaptureproxy.helper import prepend_url, replace_empty_url, run_func, swap_url
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -68,6 +68,33 @@ async def replace_matching_urls(old_url: URL, new_url: URL, html: Text) -> Text:
             new_url=new_url,
         ),
         search={},
+        exceptions={},
+        html=html,
+    )
+
+
+async def replace_empty_action_urls(new_url: URL, html: Text) -> Text:
+    """Replace urls of empty action attributes.
+
+    For example, <form id="form" method="post" novalidate action="">
+
+    Args:
+        new_url (URL): New url to replace.
+        html (Text): Text to replace
+
+    Returns:
+        Text: Replaced text
+    """
+    if not (new_url):
+        _LOGGER.debug("No new_url specified; not modifying")
+        return html
+
+    return await find_urls_bs4(
+        partial(
+            replace_empty_url,
+            new_url=new_url,
+        ),
+        search={"form": "action"},
         exceptions={},
         html=html,
     )

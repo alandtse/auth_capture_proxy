@@ -11,7 +11,11 @@ from aiohttp import ClientConnectionError, ClientSession, TooManyRedirects, web
 from aiohttp.client_reqrep import ClientResponse
 from yarl import URL
 
-from authcaptureproxy.examples.modifiers import prepend_relative_urls, replace_matching_urls
+from authcaptureproxy.examples.modifiers import (
+    prepend_relative_urls,
+    replace_matching_urls,
+    replace_empty_action_urls,
+)
 from authcaptureproxy.helper import print_resp, run_func, swap_url
 from authcaptureproxy.stackoverflow import get_open_port
 
@@ -160,10 +164,13 @@ class AuthCaptureProxy:
             self.old_tests = self.tests.copy()
             _LOGGER.debug("Refreshed %s tests: %s", len(self.tests), list(self.tests.keys()))
 
-    def refresh_modifiers(self) -> None:
+    def refresh_modifiers(self, site: Optional[URL] = None) -> None:
         """Refresh modifiers.
 
         Because modifiers may use partials, they will freeze their parameters which is a problem with self.access() if the port hasn't been assigned.
+
+        Args:
+            site (Optional[URL], optional): The current site. Defaults to None.
         """
         if self._modifiers != self._old_modifiers:
             self.modifiers.update(
@@ -176,6 +183,19 @@ class AuthCaptureProxy:
                     ),
                 }
             )
+            if site:
+                self.modifiers.update(
+                    {
+                        "change_empty_to_proxy": partial(
+                            replace_empty_action_urls,
+                            swap_url(
+                                old_url=self._host_url.with_query({}),
+                                new_url=self.access_url().with_query({}),
+                                url=site,
+                            ),
+                        ),
+                    }
+                )
             self._old_modifiers = self.modifiers.copy()
             _LOGGER.debug(
                 "Refreshed %s modifiers: %s", len(self.modifiers), list(self.modifiers.keys())
@@ -202,8 +222,6 @@ class AuthCaptureProxy:
             raise web.HTTPNotFound()
         if not self.session:
             self.session = ClientSession()
-        self.refresh_tests()
-        self.refresh_modifiers()
         method = request.method.lower()
         _LOGGER.debug("Received %s: %s", method, request.url)
         resp: Optional[ClientResponse] = None
@@ -298,6 +316,7 @@ class AuthCaptureProxy:
             return web.Response(text=f"Error connecting to {site}; please retry")
         self.last_resp = resp
         print_resp(resp)
+        self.refresh_tests()
         if self.tests:
             for test_name, test in self.tests.items():
                 result = None
@@ -318,6 +337,7 @@ class AuthCaptureProxy:
         content_type = resp.content_type
         if content_type == "text/html":
             text = await resp.text()
+            self.refresh_modifiers(resp.url)
             if self.modifiers:
                 for name, modifier in self.modifiers.items():
                     text = await run_func(modifier, name, text)

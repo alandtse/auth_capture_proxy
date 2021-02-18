@@ -157,3 +157,19 @@ def prepend_url(base_url: URL, url: URL) -> URL:
         path = url.path
         return base_url.with_path(f"{base_url.path}{path}".replace("//", "/")).with_query(query)
     return url
+
+
+def replace_empty_url(new_url: URL, url: URL) -> URL:
+    """Replace the empty url with new_url if and only if empty.
+
+    Args:
+        new_url (URL): New URL to use if url is blank
+        url (URL): url to replace if empty
+    """
+    if isinstance(new_url, str):
+        new_url = URL(new_url)
+    if isinstance(url, str):
+        url = URL(url)
+    if str(url) == "":
+        return new_url
+    return url
