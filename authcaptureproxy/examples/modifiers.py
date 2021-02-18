@@ -180,7 +180,7 @@ async def find_urls_bs4(
                     )
                     old_value = html_tag[attribute]
                     html_tag[attribute] = new_value
-                    if old_value != html_tag[attribute]:
+                    if str(old_value) != str(html_tag[attribute]):
                         _LOGGER.debug(
                             "Modified url for style:background-image %s -> %s",
                             url,
@@ -195,7 +195,7 @@ async def find_urls_bs4(
                 ):
                     old_value = html_tag[attribute]
                     html_tag[attribute] = await run_func(modifier, name="", url=url)
-                    if old_value != html_tag[attribute]:
+                    if str(old_value) != str(html_tag[attribute]):
                         _LOGGER.debug(
                             "Modified url for %s:%s %s -> %s",
                             tag,
