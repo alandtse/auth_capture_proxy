@@ -2,6 +2,10 @@
 
 <!--next-version-placeholder-->
 
+## v0.4.1 (2021-02-13)
+### Fix
+* Expose prepend and swap_url ([`2ea2b16`](https://github.com/alandtse/auth_capture_proxy/commit/2ea2b16f07bbf15926de06efb56b15393f9d9196))
+
 ## v0.4.0 (2021-02-13)
 
 ### Feature
