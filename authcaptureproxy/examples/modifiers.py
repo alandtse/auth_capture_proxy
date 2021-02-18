@@ -167,6 +167,7 @@ async def find_urls_bs4(
         "form": "action",
         "a": "href",
         "style=True": "style",
+        "img": "src",
     }
     exceptions = exceptions or {"script": ["void(0)"], "form": ["get"], "a": ["javascript:void(0)"]}
     for tag, attribute in search.items():
