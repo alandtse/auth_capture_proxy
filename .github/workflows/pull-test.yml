@@ -29,3 +29,6 @@ jobs:
       - name: Test with tox
         run: |
           tox -v
+      - uses: codecov/codecov-action@v1
+        with:
+          verbose: true # optional (default = false)
