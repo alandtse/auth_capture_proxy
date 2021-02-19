@@ -343,30 +343,36 @@ class AuthCaptureProxy:
         content_type = resp.content_type
         self.refresh_modifiers(resp.url)
         if self.modifiers:
-            text = await resp.text()
+            modified: bool = False
             for name, modifier in self.modifiers.items():
                 if isinstance(modifier, dict):
                     if name != content_type:
                         continue
                     if content_type != "text/html":
                         text = await resp.text("utf-8")
+                    else:
+                        text = await resp.text()
                     for sub_name, sub_modifier in modifier.items():
                         try:
                             text = await run_func(sub_modifier, sub_name, text)
+                            modified = True
                         except TypeError as ex:
                             _LOGGER.warning("Modifier %s is not callable: %s", sub_name, ex)
                 else:
                     # default run against text/html only
                     if content_type == "text/html":
+                        text = await resp.text()
                         try:
                             text = await run_func(modifier, name, text)
+                            modified = True
                         except TypeError as ex:
                             _LOGGER.warning("Modifier %s is not callable: %s", name, ex)
             # _LOGGER.debug("Returning modified text:\n%s", text)
-            return web.Response(
-                text=text,
-                content_type=content_type,
-            )
+            if modified:
+                return web.Response(
+                    text=text,
+                    content_type=content_type,
+                )
         # pass through non parsed content
         _LOGGER.debug(
             "Passing through %s as %s",
