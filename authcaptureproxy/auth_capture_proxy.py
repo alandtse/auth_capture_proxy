@@ -4,7 +4,7 @@ import asyncio
 import logging
 from functools import partial
 from ssl import SSLContext
-from typing import Any, Callable, Dict, Optional, Text
+from typing import Any, Callable, Dict, Optional, Text, Union
 
 import multidict
 from aiohttp import ClientConnectionError, ClientSession, TooManyRedirects, web
@@ -51,12 +51,14 @@ class AuthCaptureProxy:
         # tests and modifiers should be initialized after port is actually assigned and not during init.
         # however, to ensure defaults go first, they should have a dummy key set
         self._tests: Dict[Text, Callable] = {}
-        self._modifiers: Dict[Text, Callable] = {
-            "prepend_relative_urls": lambda x: x,
-            "change_host_to_proxy": lambda x: x,
+        self._modifiers: Dict[Text, Union[Callable, Dict[Text, Callable]]] = {
+            "text/html": {
+                "prepend_relative_urls": lambda x: x,
+                "change_host_to_proxy": lambda x: x,
+            }
         }
         self._old_tests: Dict[Text, Callable] = {}
-        self._old_modifiers: Dict[Text, Callable] = {}
+        self._old_modifiers: Dict[Text, Union[Callable, Dict[Text, Callable]]] = {}
         self._active = False
         self._all_handler_active = True
         self.headers: Dict[Text, Text] = {}
@@ -101,15 +103,15 @@ class AuthCaptureProxy:
         self._tests = value
 
     @property
-    def modifiers(self) -> Dict[Text, Callable]:
+    def modifiers(self) -> Dict[Text, Union[Callable, Dict[Text, Callable]]]:
         """Return modifiers setting.
 
-        :setter: value (Dict[Text, Any]): A dictionary of modifiers. The key should be the name of the modifier and the value should be a function or couroutine that takes a string and returns a modified string. If parameters are necessary, functools.partial should be used. See :mod:`authcaptureproxy.examples.modifiers` for examples.
+        :setter: value (Dict[Text, Dict[Text, Callable]): A nested dictionary of modifiers. The key shoud be a MIME type and the value should be a dictionary of modifiers for that MIME type where the key should be the name of the modifier and the value should be a function or couroutine that takes a string and returns a modified string. If parameters are necessary, functools.partial should be used. See :mod:`authcaptureproxy.examples.modifiers` for examples.
         """
         return self._modifiers
 
     @modifiers.setter
-    def modifiers(self, value: Dict[Text, Callable]) -> None:
+    def modifiers(self, value: Dict[Text, Union[Callable, Dict[Text, Callable]]]) -> None:
         """Set tests.
 
         Args:
@@ -175,25 +177,29 @@ class AuthCaptureProxy:
         if self._modifiers != self._old_modifiers:
             self.modifiers.update(
                 {
-                    "prepend_relative_urls": partial(prepend_relative_urls, self.access_url()),
-                    "change_host_to_proxy": partial(
-                        replace_matching_urls,
-                        self._host_url.with_query({}).with_path("/"),
-                        self.access_url(),
-                    ),
+                    "text/html": {
+                        "prepend_relative_urls": partial(prepend_relative_urls, self.access_url()),
+                        "change_host_to_proxy": partial(
+                            replace_matching_urls,
+                            self._host_url.with_query({}).with_path("/"),
+                            self.access_url(),
+                        ),
+                    }
                 }
             )
             if site:
                 self.modifiers.update(
                     {
-                        "change_empty_to_proxy": partial(
-                            replace_empty_action_urls,
-                            swap_url(
-                                old_url=self._host_url.with_query({}),
-                                new_url=self.access_url().with_query({}),
-                                url=site,
+                        "text/html": {
+                            "change_empty_to_proxy": partial(
+                                replace_empty_action_urls,
+                                swap_url(
+                                    old_url=self._host_url.with_query({}),
+                                    new_url=self.access_url().with_query({}),
+                                    url=site,
+                                ),
                             ),
-                        ),
+                        }
                     }
                 )
             self._old_modifiers = self.modifiers.copy()
@@ -335,12 +341,27 @@ class AuthCaptureProxy:
         else:
             _LOGGER.warning("Proxy has no tests; please set.")
         content_type = resp.content_type
-        if content_type == "text/html":
+        self.refresh_modifiers(resp.url)
+        if self.modifiers:
             text = await resp.text()
-            self.refresh_modifiers(resp.url)
-            if self.modifiers:
-                for name, modifier in self.modifiers.items():
-                    text = await run_func(modifier, name, text)
+            for name, modifier in self.modifiers.items():
+                if isinstance(modifier, dict):
+                    if name != content_type:
+                        continue
+                    if content_type != "text/html":
+                        text = await resp.text("utf-8")
+                    for sub_name, sub_modifier in modifier.items():
+                        try:
+                            text = await run_func(sub_modifier, sub_name, text)
+                        except TypeError as ex:
+                            _LOGGER.warning("Modifier %s is not callable: %s", sub_name, ex)
+                else:
+                    # default run against text/html only
+                    if content_type == "text/html":
+                        try:
+                            text = await run_func(modifier, name, text)
+                        except TypeError as ex:
+                            _LOGGER.warning("Modifier %s is not callable: %s", name, ex)
             # _LOGGER.debug("Returning modified text:\n%s", text)
             return web.Response(
                 text=text,

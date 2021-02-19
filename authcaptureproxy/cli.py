@@ -115,12 +115,14 @@ async def proxy_example(
     # this will add to any default modifiers
     proxy_obj.modifiers.update(
         {
-            "autofill": partial(
-                autofill,
-                {
-                    "password": "CHANGEME",
-                },
-            )
+            "text/html": {
+                "autofill": partial(
+                    autofill,
+                    {
+                        "password": "CHANGEME",
+                    },
+                )
+            }
         }
     )
     # connect to proxy at proxy.access_url() and sign in
