@@ -142,12 +142,13 @@ def swap_url(
     return result.with_path(result.path.replace("//", "/")).update_query(new_query)
 
 
-def prepend_url(base_url: URL, url: URL) -> URL:
+def prepend_url(base_url: URL, url: URL, encoded: bool = False) -> URL:
     """Prepend the url.
 
     Args:
         base_url (URL): Base URL to prepend
         url (URL): url to prepend
+        encoded (bool): Whether to treat the url as already encoded. This may be needed if the url is JavaScript.
     """
     if isinstance(base_url, str):
         base_url = URL(base_url)
@@ -156,7 +157,9 @@ def prepend_url(base_url: URL, url: URL) -> URL:
     if not url.is_absolute():
         query = url.query
         path = url.path
-        return base_url.with_path(f"{base_url.path}{path}".replace("//", "/")).with_query(query)
+        return base_url.with_path(
+            f"{base_url.path}{path}".replace("//", "/"), encoded=encoded
+        ).with_query(query)
     return url
 
 
