@@ -143,6 +143,7 @@ coveralls = "^3.0.0"
 pytest-asyncio = "^0.14.0"
 tox-gh-actions = "^2.4.0"
 tox-poetry = "^0.3.0"
+isort = "^5.7.0"
 
 [tool.poetry.extras]
 # These are referenced in the tox.ini with `extras = dev`
