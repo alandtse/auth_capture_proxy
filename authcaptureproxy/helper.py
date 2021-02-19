@@ -10,8 +10,9 @@ import logging
 from asyncio import iscoroutinefunction
 from http.cookies import SimpleCookie
 from typing import Any, Callable, Text
-from multidict import MultiDict
+
 from aiohttp import ClientResponse
+from multidict import MultiDict
 from yarl import URL
 
 _LOGGER = logging.getLogger(__name__)

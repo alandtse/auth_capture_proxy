@@ -13,8 +13,8 @@ from yarl import URL
 
 from authcaptureproxy.examples.modifiers import (
     prepend_relative_urls,
-    replace_matching_urls,
     replace_empty_action_urls,
+    replace_matching_urls,
 )
 from authcaptureproxy.helper import print_resp, run_func, swap_url
 from authcaptureproxy.stackoverflow import get_open_port
