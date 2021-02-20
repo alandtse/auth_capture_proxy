@@ -16,11 +16,10 @@ def get_open_port() -> int:
     Returns
         int: a random open port. This does not guarantee the port will remain open and may fail if there is a race condition.
     """
-    # pylint: disable=invalid-name
-    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    s: socket.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.bind(("", 0))
     s.listen(1)
-    port = s.getsockname()[1]
+    port: int = s.getsockname()[1]
     s.close()
     return port
 
