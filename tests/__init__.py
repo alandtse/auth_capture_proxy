@@ -28,6 +28,7 @@ KEEP = False
 class TestResources:
     """
     A static singleton with utilities for filesystem operations in tests.
+
     Use ``TestResources.resource`` to get a file under ``tests/resources/``.
 
     Initializes a temporary directory with ``tempfile.TemporaryDirectory``
@@ -71,7 +72,8 @@ class TestResources:
     ) -> Generator[Path, None, None]:
         """
         Context manager.
-        Creates a new temporary directory underneath ``global_temp_dir``.
+
+        Create a new temporary directory underneath ``global_temp_dir``.
         Note that it deletes the directory if it already exists,
         then deletes (if the path exists) when the context closes.
 
@@ -101,7 +103,8 @@ class TestResources:
     @classmethod
     def global_temp_dir(cls) -> Path:
         """
-        The global temporary directory, which is underneath ``tempfile.TemporaryDirectory``.
+        Get global temporary directory, which is underneath ``tempfile.TemporaryDirectory``.
+
         The parent directory will be destroyed, along with all of its components,
         as specified by ``tempfile``.
         """
@@ -109,24 +112,18 @@ class TestResources:
 
     @classmethod
     def start_datetime(cls) -> datetime:
-        """
-        The datetime that ``tests/__init__.py`` was imported.
-        """
+        """Get datetime that ``tests/__init__.py`` was imported."""
         return cls._start_dt
 
     @classmethod
     def start_monotonic_ns(cls) -> int:
-        """
-        The nanosecond value of the ``time.monotonic`` clock at which ``tests/__init__.py`` was imported.
-        """
+        """Get nanosecond value of the ``time.monotonic`` clock at which ``tests/__init__.py`` was imported."""
         return cls._start_ns
 
     @classmethod
     def destroy(cls) -> None:
-        """
-        Deletes the full tempdir tree.
-        """
-        if not KEEP:
+        """Delete the full tempdir tree."""
+        if not KEEP and cls._tempfile_dir:
             cls._tempfile_dir.cleanup()
 
     @classmethod
@@ -139,7 +136,7 @@ class TestResources:
         kwargs = dict(onerror=on_rm_error) if surefire else {}
         if path.exists():
             try:
-                shutil.rmtree(str(path), **kwargs)
+                shutil.rmtree(str(path), **kwargs)  # type: ignore
             except OSError:
                 warn(f"Testing dir {path} could not be deleted")
 

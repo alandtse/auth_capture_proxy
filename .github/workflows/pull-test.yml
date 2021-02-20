@@ -10,7 +10,7 @@ jobs:
   build:
     runs-on: ubuntu-20.04
     strategy:
-      max-parallel: 1
+      max-parallel: 3
       matrix:
         python-version:
           - 3.7
@@ -19,13 +19,25 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
       - name: "Set up Python ${{ matrix.python-version }}"
         uses: actions/setup-python@v2
         with:
           python-version: "${{ matrix.python-version }}"
       - name: Install build meta-dependencies
         run: |
-          pip install tox poetry
+          pip install tox poetry tox-gh-actions
       - name: Test with tox
         run: |
           tox -v
+      - name: Update coveralls
+        run: |
+          pip install coveralls
+          coveralls
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_REPO_TOKEN }}
+      - uses: codecov/codecov-action@v1
+        with:
+          verbose: true # optional (default = false)

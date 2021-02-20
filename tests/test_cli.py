@@ -10,7 +10,10 @@ from authcaptureproxy import cli
 
 
 class TestCli:
+    """Tests CLI interface."""
+
     def test_cli(self, capsys):
+        """Test CLI dummy output."""
         cli.info()
         out, _ = capsys.readouterr()
         assert __copyright__ in out

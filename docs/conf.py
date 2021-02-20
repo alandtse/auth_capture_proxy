@@ -6,7 +6,7 @@ https://www.sphinx-doc.org/en/master/usage/configuration.html
 """
 
 from pathlib import Path
-from typing import Optional, Type, TypeVar
+from typing import Any, Optional, Type
 
 import tomlkit  # type: ignore[import]
 
@@ -14,12 +14,10 @@ import tomlkit  # type: ignore[import]
 _root = Path(__file__).parent.parent.absolute()
 _toml = tomlkit.loads((_root / "pyproject.toml").read_text(encoding="utf8"))
 
-T = TypeVar("T")
 
-
-def find(key: str, default: Optional[T] = None, as_type: Type[T] = str) -> Optional[T]:
+def find(key: str, default: Optional[Any] = None, as_type: Type[Any] = str) -> Optional[Any]:
     """
-    Gets a value from pyproject.toml, or a default.
+    Get a value from pyproject.toml, or a default.
 
     Args:
         key: A period-delimited TOML key; e.g. ``tools.poetry.name``
@@ -31,28 +29,26 @@ def find(key: str, default: Optional[T] = None, as_type: Type[T] = str) -> Optio
     """
     at = _toml
     for k in key.split("."):
-        at = at.get(k)
-        if at is None:
-            return default
+        at = at.get(k, default)
     return as_type(at)
 
 
 # Basic information, used by Sphinx
 # Leave language as None unless you have multiple translations
 language = None
-project = find("tool.poetry.name")
-version = find("tool.poetry.version")
+project = str(find("tool.poetry.name", default=""))
+version = find("tool.poetry.version", default="")
 release = version
-author = ", ".join(find("tool.poetry.authors", as_type=list))
+author = ", ".join(find("tool.poetry.authors", default="", as_type=list))  # type: ignore
 
 # Copyright string (for documentation)
 # It's not clear whether we're supposed to, but we'll add the license
-copyright = find("tool.tyrannosaurus.sources.copyright")
-_license = find("tool.tyrannosaurus.sources.doc_license")
-_license_url = find("tool.tyrannosaurus.sources.doc_license_url")
-if _license is not None and _license_url is not None:
+copyright = find("tool.tyrannosaurus.sources.copyright", default="")
+_license = find("tool.tyrannosaurus.sources.doc_license", default="")
+_license_url = find("tool.tyrannosaurus.sources.doc_license_url", default="")
+if _license is not None and _license_url is not None and isinstance(copyright, str):
     copyright += f', <a href="{_license_url}">{_license}</a>'
-elif _license is not None:
+elif _license is not None and isinstance(copyright, str):
     copyright += f", {_license}"
 
 # Load extensions
@@ -82,9 +78,8 @@ html_theme_options = dict(
     collapse_navigation=False,
     navigation_depth=False,
     style_external_links=True,
-    today_fmt="%Y-%m-%d",
 )
-
+today_fmt = "%Y-%m-%d"
 exclude_patterns = ["_build", "Thumbs.db", ".*", "~*", "*~", "*#"]
 
 

@@ -4,15 +4,19 @@ import asyncio
 import logging
 from functools import partial
 from ssl import SSLContext
-from typing import Any, Callable, Dict, Optional, Text
+from typing import Any, Callable, Dict, Optional, Text, Union
 
 import multidict
 from aiohttp import ClientConnectionError, ClientSession, TooManyRedirects, web
 from aiohttp.client_reqrep import ClientResponse
 from yarl import URL
 
-from authcaptureproxy.examples.modifiers import prepend_relative_urls, replace_matching_urls
-from authcaptureproxy.helper import print_resp, run_func, swap_url
+from authcaptureproxy.examples.modifiers import (
+    prepend_relative_urls,
+    replace_empty_action_urls,
+    replace_matching_urls,
+)
+from authcaptureproxy.helper import get_nested_dict_keys, print_resp, run_func, swap_url
 from authcaptureproxy.stackoverflow import get_open_port
 
 _LOGGER = logging.getLogger(__name__)
@@ -38,8 +42,8 @@ class AuthCaptureProxy:
         self.session: ClientSession = session if session else ClientSession()
         self._proxy_url: URL = proxy_url
         self._host_url: URL = host_url
-        self._port: int = proxy_url.explicit_port if proxy_url.explicit_port else 0
-        self.runner: web.AppRunner = None
+        self._port: int = proxy_url.explicit_port if proxy_url.explicit_port else 0  # type: ignore
+        self.runner: Optional[web.AppRunner] = None
         self.last_resp: Optional[ClientResponse] = None
         self.init_query: Dict[Text, Any] = {}
         self.query: Dict[Text, Any] = {}
@@ -47,12 +51,14 @@ class AuthCaptureProxy:
         # tests and modifiers should be initialized after port is actually assigned and not during init.
         # however, to ensure defaults go first, they should have a dummy key set
         self._tests: Dict[Text, Callable] = {}
-        self._modifiers: Dict[Text, Callable] = {
-            "prepend_relative_urls": lambda x: x,
-            "change_host_to_proxy": lambda x: x,
+        self._modifiers: Dict[Text, Union[Callable, Dict[Text, Callable]]] = {
+            "text/html": {
+                "prepend_relative_urls": lambda x: x,
+                "change_host_to_proxy": lambda x: x,
+            }
         }
         self._old_tests: Dict[Text, Callable] = {}
-        self._old_modifiers: Dict[Text, Callable] = {}
+        self._old_modifiers: Dict[Text, Union[Callable, Dict[Text, Callable]]] = {}
         self._active = False
         self._all_handler_active = True
         self.headers: Dict[Text, Text] = {}
@@ -97,15 +103,15 @@ class AuthCaptureProxy:
         self._tests = value
 
     @property
-    def modifiers(self) -> Dict[Text, Callable]:
+    def modifiers(self) -> Dict[Text, Union[Callable, Dict[Text, Callable]]]:
         """Return modifiers setting.
 
-        :setter: value (Dict[Text, Any]): A dictionary of modifiers. The key should be the name of the modifier and the value should be a function or couroutine that takes a string and returns a modified string. If parameters are necessary, functools.partial should be used. See :mod:`authcaptureproxy.examples.modifiers` for examples.
+        :setter: value (Dict[Text, Dict[Text, Callable]): A nested dictionary of modifiers. The key shoud be a MIME type and the value should be a dictionary of modifiers for that MIME type where the key should be the name of the modifier and the value should be a function or couroutine that takes a string and returns a modified string. If parameters are necessary, functools.partial should be used. See :mod:`authcaptureproxy.examples.modifiers` for examples.
         """
         return self._modifiers
 
     @modifiers.setter
-    def modifiers(self, value: Dict[Text, Callable]) -> None:
+    def modifiers(self, value: Dict[Text, Union[Callable, Dict[Text, Callable]]]) -> None:
         """Set tests.
 
         Args:
@@ -160,26 +166,43 @@ class AuthCaptureProxy:
             self.old_tests = self.tests.copy()
             _LOGGER.debug("Refreshed %s tests: %s", len(self.tests), list(self.tests.keys()))
 
-    def refresh_modifiers(self) -> None:
+    def refresh_modifiers(self, site: Optional[URL] = None) -> None:
         """Refresh modifiers.
 
         Because modifiers may use partials, they will freeze their parameters which is a problem with self.access() if the port hasn't been assigned.
+
+        Args:
+            site (Optional[URL], optional): The current site. Defaults to None.
         """
+        DEFAULT_MODIFIERS = {
+            "prepend_relative_urls": partial(prepend_relative_urls, self.access_url()),
+            "change_host_to_proxy": partial(
+                replace_matching_urls,
+                self._host_url.with_query({}).with_path("/"),
+                self.access_url(),
+            ),
+        }
         if self._modifiers != self._old_modifiers:
-            self.modifiers.update(
-                {
-                    "prepend_relative_urls": partial(prepend_relative_urls, self.access_url()),
-                    "change_host_to_proxy": partial(
-                        replace_matching_urls,
-                        self._host_url.with_query({}).with_path("/"),
-                        self.access_url(),
-                    ),
-                }
-            )
+            if self.modifiers.get("text/html") is None:
+                self.modifiers["text/html"] = DEFAULT_MODIFIERS  # type: ignore
+            elif self.modifiers.get("text/html") and isinstance(self.modifiers["text/html"], dict):
+                self.modifiers["text/html"].update(DEFAULT_MODIFIERS)
+            if site and isinstance(self.modifiers["text/html"], dict):
+                self.modifiers["text/html"].update(
+                    {
+                        "change_empty_to_proxy": partial(
+                            replace_empty_action_urls,
+                            swap_url(
+                                old_url=self._host_url.with_query({}),
+                                new_url=self.access_url().with_query({}),
+                                url=site,
+                            ),
+                        ),
+                    }
+                )
             self._old_modifiers = self.modifiers.copy()
-            _LOGGER.debug(
-                "Refreshed %s modifiers: %s", len(self.modifiers), list(self.modifiers.keys())
-            )
+            refreshed_modifers = get_nested_dict_keys(self.modifiers)
+            _LOGGER.debug("Refreshed %s modifiers: %s", len(refreshed_modifers), refreshed_modifers)
 
     async def all_handler(self, request: web.Request, **kwargs) -> web.Response:
         """Handle all requests.
@@ -202,8 +225,6 @@ class AuthCaptureProxy:
             raise web.HTTPNotFound()
         if not self.session:
             self.session = ClientSession()
-        self.refresh_tests()
-        self.refresh_modifiers()
         method = request.method.lower()
         _LOGGER.debug("Received %s: %s", method, request.url)
         resp: Optional[ClientResponse] = None
@@ -298,6 +319,7 @@ class AuthCaptureProxy:
             return web.Response(text=f"Error connecting to {site}; please retry")
         self.last_resp = resp
         print_resp(resp)
+        self.refresh_tests()
         if self.tests:
             for test_name, test in self.tests.items():
                 result = None
@@ -316,18 +338,46 @@ class AuthCaptureProxy:
         else:
             _LOGGER.warning("Proxy has no tests; please set.")
         content_type = resp.content_type
-        if content_type == "text/html":
-            text = await resp.text()
-            if self.modifiers:
+        self.refresh_modifiers(resp.url)
+        if self.modifiers:
+            modified: bool = False
+            if content_type != "text/html" and content_type not in self.modifiers.keys():
+                text: Text = ""
+            elif content_type != "text/html" and content_type in self.modifiers.keys():
+                text = await resp.text("utf-8")
+            else:
+                text = await resp.text()
+            if text:
                 for name, modifier in self.modifiers.items():
-                    text = await run_func(modifier, name, text)
-            # _LOGGER.debug("Returning modified text:\n%s", text)
-            return web.Response(
-                text=text,
-                content_type=content_type,
-            )
-        # handle non html content
-        _LOGGER.debug("Passing through %s", content_type)
+                    if isinstance(modifier, dict):
+                        if name != content_type:
+                            continue
+                        for sub_name, sub_modifier in modifier.items():
+                            try:
+                                text = await run_func(sub_modifier, sub_name, text)
+                                modified = True
+                            except TypeError as ex:
+                                _LOGGER.warning("Modifier %s is not callable: %s", sub_name, ex)
+                    else:
+                        # default run against text/html only
+                        if content_type == "text/html":
+                            try:
+                                text = await run_func(modifier, name, text)
+                                modified = True
+                            except TypeError as ex:
+                                _LOGGER.warning("Modifier %s is not callable: %s", name, ex)
+                # _LOGGER.debug("Returning modified text:\n%s", text)
+            if modified:
+                return web.Response(
+                    text=text,
+                    content_type=content_type,
+                )
+        # pass through non parsed content
+        _LOGGER.debug(
+            "Passing through %s as %s",
+            request.url.name if request.url.name else request.url.path,
+            content_type,
+        )
         return web.Response(body=await resp.read(), content_type=content_type)
 
     async def start_proxy(
@@ -369,14 +419,16 @@ class AuthCaptureProxy:
         _LOGGER.debug("Stopping proxy at %s after %s seconds", self.access_url(), delay)
         await asyncio.sleep(delay)
         _LOGGER.debug("Closing site runner")
-        await self.runner.cleanup()
-        await self.runner.shutdown()
+        if self.runner:
+            await self.runner.cleanup()
+            await self.runner.shutdown()
         _LOGGER.debug("Site runner closed")
         # close session
         if self.session and not self.session.closed:
             _LOGGER.debug("Closing session")
             if self.session._connector_owner:
-                await self.session._connector.close()
+                if self.session._connector:
+                    await self.session._connector.close()
             _LOGGER.debug("Session closed")
         self._active = False
         _LOGGER.debug("Proxy stopped")

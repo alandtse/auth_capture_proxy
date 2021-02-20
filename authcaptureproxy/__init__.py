@@ -1,16 +1,13 @@
 #  SPDX-License-Identifier: Apache-2.0
-"""
-Metadata for this auth_capture_proxy.
-"""
+"""Metadata for this auth_capture_proxy."""
 import logging
-from typing import Sequence
 
 try:
     from importlib_metadata import PackageNotFoundError
     from importlib_metadata import metadata as __load
 except ModuleNotFoundError:
-    from importlib.metadata import PackageNotFoundError
-    from importlib.metadata import metadata as __load
+    from importlib.metadata import PackageNotFoundError  # type: ignore
+    from importlib.metadata import metadata as __load  # type: ignore
 
 # If you need to support Python 3.7, change to importlib_metadata (underscore, not dot)
 # and then list importlib_metadata to [tool.poetry.dependencies] and docs/requirements.txt
@@ -39,32 +36,6 @@ try:
     __contact__ = metadata["maintainer"]
 except PackageNotFoundError:  # pragma: no cover
     logger.error(f"Could not load package metadata for {pkg}. Is it installed?")
-
-
-class AUTHCAPTUREPROXYAssets:
-    """
-    Utilities and resources for ${Project}.
-    """
-
-    @classmethod
-    def path(cls, *nodes: Sequence[str]) -> Path:
-        """
-        Get the ``Path`` of an asset under ``resources``.
-
-        Args:
-            nodes: Path nodes underneath ``resources``
-
-        Returns:
-            The final ``Path``
-
-        Raises:
-            FileNotFoundError: If the path does not exist
-        """
-        path = Path(__file__.parent, "resources", *nodes)
-        if not path.exists():
-            raise FileNotFoundError(f"Asset {path} not found")
-        return path
-
 
 if __name__ == "__main__":  # pragma: no cover
     if metadata is not None:

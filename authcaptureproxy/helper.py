@@ -9,9 +9,10 @@ import json
 import logging
 from asyncio import iscoroutinefunction
 from http.cookies import SimpleCookie
-from typing import Any, Callable, Text
-from multidict import MultiDict
+from typing import Any, Callable, Dict, List, Mapping, Text, Union
+
 from aiohttp import ClientResponse
+from multidict import MultiDict
 from yarl import URL
 
 _LOGGER = logging.getLogger(__name__)
@@ -102,9 +103,14 @@ def swap_url(
         new_url (URL): New url to replace.
         url (URL): url to modify
     """
-    for arg in [old_url, new_url, url]:
-        if isinstance(arg, str):
-            arg = URL(arg)
+    if isinstance(old_url, str):
+        old_url = URL(old_url)
+    if isinstance(url, str):
+        url = URL(url)
+    if isinstance(new_url, str):
+        new_url = URL(new_url)
+    if isinstance(url, str):
+        url = URL(url)
     old_url_string: Text = str(old_url.with_query({}))
     new_url_string: Text = str(new_url.with_query({}))
     old_query: MultiDict = url.query
@@ -136,18 +142,58 @@ def swap_url(
     return result.with_path(result.path.replace("//", "/")).update_query(new_query)
 
 
-def prepend_url(base_url: URL, url: URL) -> URL:
+def prepend_url(base_url: URL, url: URL, encoded: bool = False) -> URL:
     """Prepend the url.
 
     Args:
         base_url (URL): Base URL to prepend
         url (URL): url to prepend
+        encoded (bool): Whether to treat the url as already encoded. This may be needed if the url is JavaScript.
     """
-    for arg in [base_url, url]:
-        if isinstance(arg, str):
-            arg = URL(arg)
+    if isinstance(base_url, str):
+        base_url = URL(base_url)
+    if isinstance(url, str):
+        url = URL(url)
     if not url.is_absolute():
         query = url.query
         path = url.path
-        return base_url.with_path(f"{base_url.path}{path}".replace("//", "/")).with_query(query)
+        return base_url.with_path(
+            f"{base_url.path}{path}".replace("//", "/"), encoded=encoded
+        ).with_query(query)
     return url
+
+
+def replace_empty_url(new_url: URL, url: URL) -> URL:
+    """Replace the empty url with new_url if and only if empty.
+
+    Args:
+        new_url (URL): New URL to use if url is blank
+        url (URL): url to replace if empty
+    """
+    if isinstance(new_url, str):
+        new_url = URL(new_url)
+    if isinstance(url, str):
+        url = URL(url)
+    if str(url) == "":
+        return new_url
+    return url
+
+
+def get_nested_dict_keys(
+    nested_dict: Mapping[Text, Union[Callable, Dict[Text, Callable]]]
+) -> List[Text]:
+    """Get list of nested dict keys.
+
+    Args:
+        nested_dict (Mapping[Text, Union[Callable, Dict[Text, Callable]]]): The dictionary to parse.
+
+    Returns:
+        List[Text]: List of keys from dictionary.
+    """
+    result: List[Text] = []
+    for key, value in nested_dict.items():
+        if isinstance(value, dict):
+            result += get_nested_dict_keys(value)
+        else:
+            result.append(key)
+    return result

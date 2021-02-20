@@ -12,7 +12,7 @@ from typing import Callable, Dict, List, Optional, Text
 from bs4 import BeautifulSoup  # type: ignore[import]
 from yarl import URL
 
-from authcaptureproxy.helper import prepend_url, run_func, swap_url
+from authcaptureproxy.helper import prepend_url, replace_empty_url, run_func, swap_url
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -68,6 +68,33 @@ async def replace_matching_urls(old_url: URL, new_url: URL, html: Text) -> Text:
             new_url=new_url,
         ),
         search={},
+        exceptions={},
+        html=html,
+    )
+
+
+async def replace_empty_action_urls(new_url: URL, html: Text) -> Text:
+    """Replace urls of empty action attributes.
+
+    For example, <form id="form" method="post" novalidate action="">
+
+    Args:
+        new_url (URL): New url to replace.
+        html (Text): Text to replace
+
+    Returns:
+        Text: Replaced text
+    """
+    if not (new_url):
+        _LOGGER.debug("No new_url specified; not modifying")
+        return html
+
+    return await find_urls_bs4(
+        partial(
+            replace_empty_url,
+            new_url=new_url,
+        ),
+        search={"form": "action"},
         exceptions={},
         html=html,
     )
@@ -154,12 +181,20 @@ async def find_urls_bs4(
     if not modifier:
         _LOGGER.debug("No modifier provided; returning unmodified")
         return html
+    for nested_html in soup.find_all("script", type="text/html"):
+        if nested_html.contents:
+            _LOGGER.debug(
+                "Found %s nested html content, searching nested content", len(nested_html.contents)
+            )
+        for content in nested_html.contents:
+            content.replace_with(await find_urls_bs4(modifier, search, exceptions, str(content)))
     search = search or {
         "script": "src",
         "link": "href",
         "form": "action",
         "a": "href",
         "style=True": "style",
+        "img": "src",
     }
     exceptions = exceptions or {"script": ["void(0)"], "form": ["get"], "a": ["javascript:void(0)"]}
     for tag, attribute in search.items():
@@ -171,8 +206,8 @@ async def find_urls_bs4(
                 # TODO: Rewrite regex to handle general case
                 pattern = r"(?<=style=[\"']background-image:url\([\"']).*(?=[\"']\))"
                 attribute_value = html_tag.get(attribute)
-                url = URL(re.search(pattern, attribute_value))
-                if url and url not in exceptions.get(tag, []):
+                url: Optional[URL] = URL(str(re.search(pattern, attribute_value)))
+                if url is not None and url not in exceptions.get(tag, []):
                     new_value = re.sub(
                         pattern,
                         await run_func(modifier, name="", url=url),
@@ -180,22 +215,22 @@ async def find_urls_bs4(
                     )
                     old_value = html_tag[attribute]
                     html_tag[attribute] = new_value
-                    if old_value != html_tag[attribute]:
+                    if str(old_value) != str(html_tag[attribute]):
                         _LOGGER.debug(
                             "Modified url for style:background-image %s -> %s",
                             url,
                             html_tag[attribute],
                         )
             else:
-                url = URL(html_tag.get(attribute)) if html_tag.get(attribute) else None
+                url = URL(html_tag.get(attribute)) if html_tag.get(attribute) is not None else None
                 if (
-                    url
+                    url is not None
                     and not str(url).startswith("data:")
                     and str(url) not in exceptions.get(tag, [])
                 ):
                     old_value = html_tag[attribute]
                     html_tag[attribute] = await run_func(modifier, name="", url=url)
-                    if old_value != html_tag[attribute]:
+                    if str(old_value) != str(html_tag[attribute]):
                         _LOGGER.debug(
                             "Modified url for %s:%s %s -> %s",
                             tag,

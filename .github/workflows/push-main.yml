@@ -37,6 +37,9 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_REPO_TOKEN }}
+      - uses: codecov/codecov-action@v1
+        with:
+          verbose: true # optional (default = false)
   release:
     needs: build
     # https://github.community/t/how-do-i-specify-job-dependency-running-in-another-workflow/16482
