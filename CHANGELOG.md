@@ -2,6 +2,10 @@
 
 <!--next-version-placeholder-->
 
+## v0.4.2 (2021-02-20)
+### Fix
+* Bump dependencies ([`6e9dfd8`](https://github.com/alandtse/auth_capture_proxy/commit/6e9dfd89a059c3c272ad2be0ec4da3f6f439a0ce))
+
 ## v0.4.1 (2021-02-13)
 ### Fix
 * Expose prepend and swap_url ([`2ea2b16`](https://github.com/alandtse/auth_capture_proxy/commit/2ea2b16f07bbf15926de06efb56b15393f9d9196))
