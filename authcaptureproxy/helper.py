@@ -9,7 +9,7 @@ import json
 import logging
 from asyncio import iscoroutinefunction
 from http.cookies import SimpleCookie
-from typing import Any, Callable, Text
+from typing import Any, Callable, Dict, List, Mapping, Text, Union
 
 from aiohttp import ClientResponse
 from multidict import MultiDict
@@ -177,3 +177,23 @@ def replace_empty_url(new_url: URL, url: URL) -> URL:
     if str(url) == "":
         return new_url
     return url
+
+
+def get_nested_dict_keys(
+    nested_dict: Mapping[Text, Union[Callable, Dict[Text, Callable]]]
+) -> List[Text]:
+    """Get list of nested dict keys.
+
+    Args:
+        nested_dict (Mapping[Text, Union[Callable, Dict[Text, Callable]]]): The dictionary to parse.
+
+    Returns:
+        List[Text]: List of keys from dictionary.
+    """
+    result: List[Text] = []
+    for key, value in nested_dict.items():
+        if isinstance(value, dict):
+            result += get_nested_dict_keys(value)
+        else:
+            result.append(key)
+    return result

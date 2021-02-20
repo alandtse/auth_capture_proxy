@@ -16,7 +16,7 @@ from authcaptureproxy.examples.modifiers import (
     replace_empty_action_urls,
     replace_matching_urls,
 )
-from authcaptureproxy.helper import print_resp, run_func, swap_url
+from authcaptureproxy.helper import get_nested_dict_keys, print_resp, run_func, swap_url
 from authcaptureproxy.stackoverflow import get_open_port
 
 _LOGGER = logging.getLogger(__name__)
@@ -174,38 +174,35 @@ class AuthCaptureProxy:
         Args:
             site (Optional[URL], optional): The current site. Defaults to None.
         """
+        DEFAULT_MODIFIERS = {
+            "prepend_relative_urls": partial(prepend_relative_urls, self.access_url()),
+            "change_host_to_proxy": partial(
+                replace_matching_urls,
+                self._host_url.with_query({}).with_path("/"),
+                self.access_url(),
+            ),
+        }
         if self._modifiers != self._old_modifiers:
-            self.modifiers.update(
-                {
-                    "text/html": {
-                        "prepend_relative_urls": partial(prepend_relative_urls, self.access_url()),
-                        "change_host_to_proxy": partial(
-                            replace_matching_urls,
-                            self._host_url.with_query({}).with_path("/"),
-                            self.access_url(),
-                        ),
-                    }
-                }
-            )
-            if site:
-                self.modifiers.update(
+            if self.modifiers.get("text/html") is None:
+                self.modifiers["text/html"] = DEFAULT_MODIFIERS  # type: ignore
+            elif self.modifiers.get("text/html") and isinstance(self.modifiers["text/html"], dict):
+                self.modifiers["text/html"].update(DEFAULT_MODIFIERS)
+            if site and isinstance(self.modifiers["text/html"], dict):
+                self.modifiers["text/html"].update(
                     {
-                        "text/html": {
-                            "change_empty_to_proxy": partial(
-                                replace_empty_action_urls,
-                                swap_url(
-                                    old_url=self._host_url.with_query({}),
-                                    new_url=self.access_url().with_query({}),
-                                    url=site,
-                                ),
+                        "change_empty_to_proxy": partial(
+                            replace_empty_action_urls,
+                            swap_url(
+                                old_url=self._host_url.with_query({}),
+                                new_url=self.access_url().with_query({}),
+                                url=site,
                             ),
-                        }
+                        ),
                     }
                 )
             self._old_modifiers = self.modifiers.copy()
-            _LOGGER.debug(
-                "Refreshed %s modifiers: %s", len(self.modifiers), list(self.modifiers.keys())
-            )
+            refreshed_modifers = get_nested_dict_keys(self.modifiers)
+            _LOGGER.debug("Refreshed %s modifiers: %s", len(refreshed_modifers), refreshed_modifers)
 
     async def all_handler(self, request: web.Request, **kwargs) -> web.Response:
         """Handle all requests.
@@ -344,30 +341,32 @@ class AuthCaptureProxy:
         self.refresh_modifiers(resp.url)
         if self.modifiers:
             modified: bool = False
-            for name, modifier in self.modifiers.items():
-                if isinstance(modifier, dict):
-                    if name != content_type:
-                        continue
-                    if content_type != "text/html":
-                        text = await resp.text("utf-8")
+            if content_type != "text/html" and content_type not in self.modifiers.keys():
+                text: Text = ""
+            elif content_type != "text/html" and content_type in self.modifiers.keys():
+                text = await resp.text("utf-8")
+            else:
+                text = await resp.text()
+            if text:
+                for name, modifier in self.modifiers.items():
+                    if isinstance(modifier, dict):
+                        if name != content_type:
+                            continue
+                        for sub_name, sub_modifier in modifier.items():
+                            try:
+                                text = await run_func(sub_modifier, sub_name, text)
+                                modified = True
+                            except TypeError as ex:
+                                _LOGGER.warning("Modifier %s is not callable: %s", sub_name, ex)
                     else:
-                        text = await resp.text()
-                    for sub_name, sub_modifier in modifier.items():
-                        try:
-                            text = await run_func(sub_modifier, sub_name, text)
-                            modified = True
-                        except TypeError as ex:
-                            _LOGGER.warning("Modifier %s is not callable: %s", sub_name, ex)
-                else:
-                    # default run against text/html only
-                    if content_type == "text/html":
-                        text = await resp.text()
-                        try:
-                            text = await run_func(modifier, name, text)
-                            modified = True
-                        except TypeError as ex:
-                            _LOGGER.warning("Modifier %s is not callable: %s", name, ex)
-            # _LOGGER.debug("Returning modified text:\n%s", text)
+                        # default run against text/html only
+                        if content_type == "text/html":
+                            try:
+                                text = await run_func(modifier, name, text)
+                                modified = True
+                            except TypeError as ex:
+                                _LOGGER.warning("Modifier %s is not callable: %s", name, ex)
+                # _LOGGER.debug("Returning modified text:\n%s", text)
             if modified:
                 return web.Response(
                     text=text,
