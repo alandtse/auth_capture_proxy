@@ -31,7 +31,7 @@ def autofill(items: dict, html: Text) -> Text:
 
     """
     soup: BeautifulSoup = BeautifulSoup(html, "html.parser")
-    if not soup:
+    if not soup or not html:
         _LOGGER.debug("Soup is empty")
         return ""
     if not items:
@@ -56,7 +56,7 @@ async def replace_matching_urls(old_url: URL, new_url: URL, html: Text) -> Text:
     Returns:
         Text: Replaced text
     """
-    if not (old_url or new_url):
+    if not old_url or not new_url:
         _LOGGER.debug("No old_url or new_url specified; not modifying")
         return html
 
@@ -85,7 +85,7 @@ async def replace_empty_action_urls(new_url: URL, html: Text) -> Text:
     Returns:
         Text: Replaced text
     """
-    if not (new_url):
+    if not new_url:
         _LOGGER.debug("No new_url specified; not modifying")
         return html
 
