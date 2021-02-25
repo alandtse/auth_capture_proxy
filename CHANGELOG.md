@@ -2,6 +2,10 @@
 
 <!--next-version-placeholder-->
 
+## v0.5.0 (2021-02-25)
+### Feature
+* Process multipart/form-data ([#4](https://github.com/alandtse/auth_capture_proxy/issues/4)) ([`d9fc558`](https://github.com/alandtse/auth_capture_proxy/commit/d9fc558347df82f45330a76c04969d3e99b25717))
+
 ## v0.4.2 (2021-02-20)
 ### Fix
 * Bump dependencies ([`6e9dfd8`](https://github.com/alandtse/auth_capture_proxy/commit/6e9dfd89a059c3c272ad2be0ec4da3f6f439a0ce))
