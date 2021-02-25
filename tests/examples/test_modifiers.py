@@ -12,6 +12,7 @@ EMPTY_URL = URL("")
 VALID_URL = URL("http://www.google.com")
 RELATIVE_URL = URL("/test/asdf")
 ABSOLUTE_URL = URL("http://example.com")
+NONE_URL = URL("")
 
 USERNAME = "TEST USER"
 PASSWORD = "PASSWORD"  # nosec
@@ -131,7 +132,20 @@ async def test_replace_matching_urls():
 
 
 @pytest.mark.asyncio
+async def test_replace_matching_urls_blank_url():
+    """Test matching urls replaced."""
+    for form in [FORM, FORM_WITH_DATA, FORM_NO_NAME, FORM_NO_ID, build_random_html()]:
+        result = await modifiers.replace_matching_urls(NONE_URL, PROXY_URL, form)
+        assert form == result
+        result = await modifiers.replace_matching_urls(HOST_URL, NONE_URL, form)
+        assert form == result
+        result = await modifiers.replace_matching_urls(NONE_URL, NONE_URL, form)
+        assert form == result
+
+
+@pytest.mark.asyncio
 async def test_replace_empty_action_urls():
+    """Test replace_empty_action urls."""
     for form in [
         FORM,
         FORM_WITH_DATA,
@@ -150,7 +164,23 @@ async def test_replace_empty_action_urls():
 
 
 @pytest.mark.asyncio
+async def test_replace_empty_action_urls_empty():
+    """Test replace_empty_action urls with empty url."""
+    for form in [
+        FORM,
+        FORM_WITH_DATA,
+        FORM_NO_NAME,
+        FORM_NO_ID,
+        build_random_html(),
+        FORM_WITH_EMPTY_ACTION,
+    ]:
+        result = await modifiers.replace_empty_action_urls(NONE_URL, form)
+        assert result == form
+
+
+@pytest.mark.asyncio
 async def test_prepend_relative_urls():
+    """Test prepend_relative_urls."""
     start_url = random.choice(RELATIVE_URLS)  # nosec
     for form in [
         FORM,
@@ -176,3 +206,20 @@ async def test_prepend_relative_urls():
                         assert new_url.startswith(str(URL(url).with_query({})))
                         if old_url:
                             assert new_url.endswith(start_url)
+
+
+@pytest.mark.asyncio
+async def test_prepend_relative_urls_empty():
+    """Test prepend_relative_urls with empty_url."""
+    start_url = random.choice(RELATIVE_URLS)  # nosec
+    for form in [
+        FORM,
+        FORM_WITH_DATA,
+        FORM_NO_NAME,
+        FORM_NO_ID,
+        build_random_html(url=start_url),
+        FORM_WITH_EMPTY_ACTION,
+    ]:
+
+        result = await modifiers.prepend_relative_urls(NONE_URL, form)
+        assert result == form
