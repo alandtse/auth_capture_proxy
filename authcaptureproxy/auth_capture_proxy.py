@@ -4,10 +4,18 @@ import asyncio
 import logging
 from functools import partial
 from ssl import SSLContext
-from typing import Any, Callable, Dict, Optional, Text, Union
+from typing import Any, Callable, Dict, List, Optional, Text, Tuple, Union
 
 import multidict
-from aiohttp import ClientConnectionError, ClientSession, TooManyRedirects, web
+from aiohttp import (
+    ClientConnectionError,
+    ClientSession,
+    MultipartReader,
+    MultipartWriter,
+    TooManyRedirects,
+    hdrs,
+    web,
+)
 from aiohttp.client_reqrep import ClientResponse
 from yarl import URL
 
@@ -220,6 +228,45 @@ class AuthCaptureProxy:
             web.HTTPNotFound: Return 404 when all_handler is disabled
 
         """
+
+        async def _process_multipart(reader: MultipartReader, writer: MultipartWriter) -> None:
+            """Process multipart.
+
+            Args:
+                reader (MultipartReader): Response multipart to process.
+                writer (MultipartWriter): Multipart to write out.
+            """
+            while True:
+                part = await reader.next()  # noqa: B305
+                # https://github.com/PyCQA/flake8-bugbear/issues/59
+                if part is None:
+                    break
+                if isinstance(part, MultipartReader):
+                    await _process_multipart(part, writer)
+                elif part.headers.get("hdrs.CONTENT_TYPE"):
+                    if part.headers[hdrs.CONTENT_TYPE] == "application/json":
+                        part_data: Optional[
+                            Union[Text, Dict[Text, Any], List[Tuple[Text, Text]], bytes]
+                        ] = await part.json()
+                        writer.append_json(part_data)
+                    elif part.headers[hdrs.CONTENT_TYPE].startswith("text"):
+                        part_data = await part.text()
+                        writer.append(part_data)
+                    elif part.headers[hdrs.CONTENT_TYPE] == "application/www-urlform-encode":
+                        part_data = await part.form()
+                        writer.append_form(part_data)
+                    else:
+                        part_data = await part.read()
+                        writer.append(part_data)
+                else:
+                    part_data = await part.read()
+                    if part.name:
+                        self.data.update({part.name: part_data})
+                    elif part.filename:
+                        part_data = await part.read()
+                        self.data.update({part.filename: part_data})
+                    writer.append(part_data)
+
         if not self.all_handler_active:
             _LOGGER.debug("%s all_handler is disabled; returning 404.", self)
             raise web.HTTPNotFound()
@@ -245,7 +292,13 @@ class AuthCaptureProxy:
                 url=request.url,
             )
         self.query.update(request.query)
-        data = await request.post()
+        data = None
+        mpwriter = None
+        if request.content_type == "multipart/form-data":
+            mpwriter = MultipartWriter()
+            await _process_multipart(await request.multipart(), mpwriter)
+        else:
+            data = await request.post()
         json_data = None
         if request.has_body:
             json_data = await request.json()
@@ -289,7 +342,13 @@ class AuthCaptureProxy:
                 self.session.cookie_jar.filter_cookies(URL(site)),
             )
             try:
-                if data:
+                if mpwriter:
+                    resp = await getattr(self.session, method)(
+                        site,
+                        data=mpwriter,
+                        headers=headers,
+                    )
+                elif data:
                     resp = await getattr(self.session, method)(
                         site,
                         data=data,
