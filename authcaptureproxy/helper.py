@@ -45,7 +45,7 @@ def print_resp(resp: ClientResponse) -> None:
             cookies[key] = morsel.value
         headers["Cookie"] = cookies
     _LOGGER.debug(
-        "%s: \n%s with\n%s\n returned %s:%s with response %s",
+        "%s: \n%s with\n%s\nreturned %s:%s with response %s",
         method,
         url,
         json.dumps(headers),
