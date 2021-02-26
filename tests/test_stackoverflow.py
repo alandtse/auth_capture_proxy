@@ -36,10 +36,17 @@ def test_return_timer_countdown_refresh_html():
             random.choice(string.ascii_letters + string.digits)  # nosec
             for _ in range(random.randint(0, 200))  # nosec
         )
-        result = return_timer_countdown_refresh_html(seconds, text)
+        hard_refresh = seconds % 2 == 0
+        result = return_timer_countdown_refresh_html(seconds, text, hard_refresh)
         soup = bs(result, "html.parser")
         assert soup.find("script", defer="defer")
         assert soup.find("script", defer="defer").contents[0].endswith(f"""({seconds});""")
+        assert (
+            soup.find("script", defer="defer")
+            .contents[0]
+            .find(f"""location.reload({str(hard_refresh).lower()});""")
+            > 0
+        )
         assert soup.find("body")
         assert soup.find("body").contents[0] == text
         assert soup.find("body").contents[1].name == "div"
