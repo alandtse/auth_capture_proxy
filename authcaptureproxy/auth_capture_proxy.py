@@ -335,7 +335,7 @@ class AuthCaptureProxy:
                     )
             headers = await self.modify_headers(site, request)
             _LOGGER.debug(
-                "Attempting %s to %s: \n headers:%s \ncookies: %s",
+                "Attempting %s to %s: \nheaders:%s \ncookies: %s",
                 method,
                 site,
                 headers,
