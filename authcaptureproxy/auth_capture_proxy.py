@@ -378,6 +378,7 @@ class AuthCaptureProxy:
             return web.Response(text=f"Error connecting to {site}; please retry")
         self.last_resp = resp
         print_resp(resp)
+        self.check_redirects()
         self.refresh_tests()
         if self.tests:
             for test_name, test in self.tests.items():
@@ -569,3 +570,22 @@ class AuthCaptureProxy:
         # _LOGGER.debug("Final headers %s", result)
         result.update(self.headers if self.headers else {})
         return multidict.MultiDict(result)
+
+    def check_redirects(self) -> None:
+        """Change host if redirect detected."""
+        if not self.last_resp:
+            return
+        resp: ClientResponse = self.last_resp
+        if resp.history:
+            for item in resp.history:
+                if (
+                    item.status in [301, 302, 303, 304, 305, 306, 307, 308]
+                    and resp.url.host != self._host_url.host
+                ):
+                    _LOGGER.debug(
+                        "Detected %s redirect from %s to %s; changing proxy host",
+                        item.status,
+                        item.url.host,
+                        resp.url.host,
+                    )
+                    self._host_url = self._host_url.with_host(str(resp.url.host))
