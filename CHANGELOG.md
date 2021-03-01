@@ -2,6 +2,10 @@
 
 <!--next-version-placeholder-->
 
+## v0.6.0 (2021-03-01)
+### Feature
+* Change host when redirect detected ([`1d6fa10`](https://github.com/alandtse/auth_capture_proxy/commit/1d6fa10085a0f7ccd049caa2a0d3778c12a276fc))
+
 ## v0.5.0 (2021-02-25)
 ### Feature
 * Process multipart/form-data ([#4](https://github.com/alandtse/auth_capture_proxy/issues/4)) ([`d9fc558`](https://github.com/alandtse/auth_capture_proxy/commit/d9fc558347df82f45330a76c04969d3e99b25717))
