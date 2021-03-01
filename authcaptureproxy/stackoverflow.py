@@ -24,7 +24,9 @@ def get_open_port() -> int:
     return port
 
 
-def return_timer_countdown_refresh_html(seconds: int, text: Text) -> Text:
+def return_timer_countdown_refresh_html(
+    seconds: int, text: Text, hard_refresh: bool = True
+) -> Text:
     """Return JavaScript timer countdown for html injection. This is to use for tester success.
 
     https://stackoverflow.com/questions/16532577/javascript-refresh-countdown-text/16532611#16532611
@@ -32,13 +34,14 @@ def return_timer_countdown_refresh_html(seconds: int, text: Text) -> Text:
     Args:
         seconds (int): Seconds to delay
         text (Text): HTML text to display before the timer text.
+        hard_refresh (bool): Whether to force refresh of cache
     Returns:
         Text: HTML for injection
     """
     return f"""<html><head></head><body>{text}<div id="countdown"></div></body>
     <script defer="defer">(function countdown(remaining) {{
     if(remaining < 0)
-        location.reload(true);
+        location.reload({"true" if hard_refresh else "false"});
     else{{
     document.getElementById('countdown').innerHTML = 'Automaticaly reloading page in ' + Math.max(Math.floor(remaining), 0) + ' seconds.';
     setTimeout(function(){{ countdown(remaining - 1); }}, 1000);
