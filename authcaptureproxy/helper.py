@@ -105,8 +105,6 @@ def swap_url(
     """
     if isinstance(old_url, str):
         old_url = URL(old_url)
-    if isinstance(url, str):
-        url = URL(url)
     if isinstance(new_url, str):
         new_url = URL(new_url)
     if isinstance(url, str):

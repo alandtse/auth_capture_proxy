@@ -2,6 +2,7 @@
 """Python Package for auth capture proxy."""
 import asyncio
 import logging
+import re
 from functools import partial
 from ssl import SSLContext
 from typing import Any, Callable, Dict, List, Optional, Text, Tuple, Union
@@ -70,6 +71,9 @@ class AuthCaptureProxy:
         self._active = False
         self._all_handler_active = True
         self.headers: Dict[Text, Text] = {}
+        self.redirect_filters: Dict[Text, List[Text]] = {
+            "url": []
+        }  # dictionary of lists of regex strings to filter against
 
     @property
     def active(self) -> bool:
@@ -273,21 +277,26 @@ class AuthCaptureProxy:
         if not self.session:
             self.session = ClientSession()
         method = request.method.lower()
-        _LOGGER.debug("Received %s: %s", method, request.url)
+        _LOGGER.debug("Received %s: %s for %s", method, request.url, self._host_url)
         resp: Optional[ClientResponse] = None
+        old_url: URL = (
+            self.access_url().with_host(request.url.host)
+            if request.url.host and request.url.host != self.access_url().host
+            else self.access_url()
+        )
         if request.scheme == "http" and self.access_url().scheme == "https":
             # detect reverse proxy downgrade
             _LOGGER.debug("Detected http while should be https; switching to https")
             site: URL = swap_url(
                 ignore_query=True,
-                old_url=self.access_url(),
+                old_url=old_url,
                 new_url=self._host_url.with_path("/"),
                 url=request.url.with_scheme("https"),
             )
         else:
             site = swap_url(
                 ignore_query=True,
-                old_url=self.access_url(),
+                old_url=old_url,
                 new_url=self._host_url.with_path("/"),
                 url=request.url,
             )
@@ -572,7 +581,10 @@ class AuthCaptureProxy:
         return multidict.MultiDict(result)
 
     def check_redirects(self) -> None:
-        """Change host if redirect detected."""
+        """Change host if redirect detected and regex does not match self.redirect_filters.
+
+        Self.redirect_filters is a dict with key as attr in resp and value as list of regex expressions to filter against.
+        """
         if not self.last_resp:
             return
         resp: ClientResponse = self.last_resp
@@ -582,6 +594,28 @@ class AuthCaptureProxy:
                     item.status in [301, 302, 303, 304, 305, 306, 307, 308]
                     and resp.url.host != self._host_url.host
                 ):
+                    filtered = False
+                    for attr, regex_list in self.redirect_filters.items():
+                        if getattr(resp, attr) and filter(
+                            lambda regex_string: re.search(regex_string, str(getattr(resp, attr))),
+                            regex_list,
+                        ):
+                            _LOGGER.debug(
+                                "Check_redirects: Filtered on %s in %s for resp attribute %s",
+                                list(
+                                    filter(
+                                        lambda regex_string: re.search(
+                                            regex_string, str(getattr(resp, attr))
+                                        ),
+                                        regex_list,
+                                    )
+                                ),
+                                str(getattr(resp, attr)),
+                                attr,
+                            )
+                            filtered = True
+                    if filtered:
+                        return
                     _LOGGER.debug(
                         "Detected %s redirect from %s to %s; changing proxy host",
                         item.status,
