@@ -2,6 +2,7 @@
 """Python Package for auth capture proxy."""
 import asyncio
 import logging
+import re
 from functools import partial
 from ssl import SSLContext
 from typing import Any, Callable, Dict, List, Optional, Text, Tuple, Union
@@ -70,6 +71,9 @@ class AuthCaptureProxy:
         self._active = False
         self._all_handler_active = True
         self.headers: Dict[Text, Text] = {}
+        self.redirect_filters: Dict[Text, List[Text]] = {
+            "url": []
+        }  # dictionary of lists of regex strings to filter against
 
     @property
     def active(self) -> bool:
@@ -572,7 +576,10 @@ class AuthCaptureProxy:
         return multidict.MultiDict(result)
 
     def check_redirects(self) -> None:
-        """Change host if redirect detected."""
+        """Change host if redirect detected and regex does not match self.redirect_filters.
+
+        Self.redirect_filters is a dict with key as attr in resp and value as list of regex expressions to filter against.
+        """
         if not self.last_resp:
             return
         resp: ClientResponse = self.last_resp
@@ -582,6 +589,28 @@ class AuthCaptureProxy:
                     item.status in [301, 302, 303, 304, 305, 306, 307, 308]
                     and resp.url.host != self._host_url.host
                 ):
+                    filtered = False
+                    for attr, regex_list in self.redirect_filters.items():
+                        if getattr(resp, attr) and filter(
+                            lambda regex_string: re.search(regex_string, str(getattr(resp, attr))),
+                            regex_list,
+                        ):
+                            _LOGGER.debug(
+                                "Check_redirects: Filtered on %s in %s for resp attribute %s",
+                                list(
+                                    filter(
+                                        lambda regex_string: re.search(
+                                            regex_string, str(getattr(resp, attr))
+                                        ),
+                                        regex_list,
+                                    )
+                                ),
+                                str(getattr(resp, attr)),
+                                attr,
+                            )
+                            filtered = True
+                    if filtered:
+                        return
                     _LOGGER.debug(
                         "Detected %s redirect from %s to %s; changing proxy host",
                         item.status,

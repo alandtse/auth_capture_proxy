@@ -125,6 +125,9 @@ async def proxy_example(
             }
         }
     )
+    # add filter to redirect check. Filter out all urls from redirect check.
+    proxy_obj.redirect_filters = {"url": ["^.*$"]}
+
     # connect to proxy at proxy.access_url() and sign in
     typer.echo(
         f"Launching browser to connect to proxy at {proxy_obj.access_url()} and sign in using logged-out account."
