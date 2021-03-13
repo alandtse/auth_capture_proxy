@@ -277,21 +277,26 @@ class AuthCaptureProxy:
         if not self.session:
             self.session = ClientSession()
         method = request.method.lower()
-        _LOGGER.debug("Received %s: %s", method, request.url)
+        _LOGGER.debug("Received %s: %s for %s", method, request.url, self._host_url)
         resp: Optional[ClientResponse] = None
+        old_url: URL = (
+            self.access_url().with_host(request.url.host)
+            if request.url.host and request.url.host != self.access_url().host
+            else self.access_url()
+        )
         if request.scheme == "http" and self.access_url().scheme == "https":
             # detect reverse proxy downgrade
             _LOGGER.debug("Detected http while should be https; switching to https")
             site: URL = swap_url(
                 ignore_query=True,
-                old_url=self.access_url(),
+                old_url=old_url,
                 new_url=self._host_url.with_path("/"),
                 url=request.url.with_scheme("https"),
             )
         else:
             site = swap_url(
                 ignore_query=True,
-                old_url=self.access_url(),
+                old_url=old_url,
                 new_url=self._host_url.with_path("/"),
                 url=request.url,
             )
