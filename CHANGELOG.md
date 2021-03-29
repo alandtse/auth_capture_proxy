@@ -2,6 +2,10 @@
 
 <!--next-version-placeholder-->
 
+## v0.7.1 (2021-03-29)
+### Fix
+* Fix filter on redirect detection ([#10](https://github.com/alandtse/auth_capture_proxy/issues/10)) ([`94fb40e`](https://github.com/alandtse/auth_capture_proxy/commit/94fb40e81b7a1cdb5c6cc85bad1d68c4802d9ff6))
+
 ## v0.7.0 (2021-03-13)
 ### Feature
 * Add filter for check_redirects ([#6](https://github.com/alandtse/auth_capture_proxy/issues/6)) ([`144147a`](https://github.com/alandtse/auth_capture_proxy/commit/144147a365293541a763d4a8957b57d1ed2c7aaa))
