@@ -596,12 +596,16 @@ class AuthCaptureProxy:
                 ):
                     filtered = False
                     for attr, regex_list in self.redirect_filters.items():
-                        if getattr(resp, attr) and filter(
-                            lambda regex_string: re.search(regex_string, str(getattr(resp, attr))),
-                            regex_list,
+                        if getattr(resp, attr) and list(
+                            filter(
+                                lambda regex_string: re.search(
+                                    regex_string, str(getattr(resp, attr))
+                                ),
+                                regex_list,
+                            )
                         ):
                             _LOGGER.debug(
-                                "Check_redirects: Filtered on %s in %s for resp attribute %s",
+                                "Check_redirects: Filtered out on %s in %s for resp attribute %s",
                                 list(
                                     filter(
                                         lambda regex_string: re.search(
