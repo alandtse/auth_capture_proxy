@@ -11,6 +11,7 @@ import multidict
 from aiohttp import (
     ClientConnectionError,
     ClientSession,
+    ClientTimeout,
     MultipartReader,
     MultipartWriter,
     TooManyRedirects,
@@ -48,7 +49,9 @@ class AuthCaptureProxy:
             session (ClientSession): Session to make aiohttp queries. Optional
 
         """
-        self.session: ClientSession = session if session else ClientSession()
+        self.session: ClientSession = (
+            session if session else ClientSession(timeout=ClientTimeout(total=30))
+        )
         self._proxy_url: URL = proxy_url
         self._host_url: URL = host_url
         self._port: int = proxy_url.explicit_port if proxy_url.explicit_port else 0  # type: ignore
