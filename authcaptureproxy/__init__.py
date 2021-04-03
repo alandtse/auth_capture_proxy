@@ -13,6 +13,7 @@ except ModuleNotFoundError:
 # and then list importlib_metadata to [tool.poetry.dependencies] and docs/requirements.txt
 from pathlib import Path
 
+from authcaptureproxy import const
 from authcaptureproxy.auth_capture_proxy import AuthCaptureProxy
 from authcaptureproxy.examples.modifiers import find_regex_urls
 from authcaptureproxy.helper import prepend_url, swap_url
@@ -46,6 +47,7 @@ if __name__ == "__main__":  # pragma: no cover
 
 __all__ = [
     "AuthCaptureProxy",
+    "const",
     "return_timer_countdown_refresh_html",
     "find_regex_urls",
     "prepend_url",
