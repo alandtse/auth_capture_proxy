@@ -2,6 +2,10 @@
 
 <!--next-version-placeholder-->
 
+## v0.8.0 (2021-04-03)
+### Feature
+* Allow disabling of header autogeneration ([#11](https://github.com/alandtse/auth_capture_proxy/issues/11)) ([`3eade2d`](https://github.com/alandtse/auth_capture_proxy/commit/3eade2deedf82c96bbf90724f5eee8c8a8a70234))
+
 ## v0.7.1 (2021-03-29)
 ### Fix
 * Fix filter on redirect detection ([#10](https://github.com/alandtse/auth_capture_proxy/issues/10)) ([`94fb40e`](https://github.com/alandtse/auth_capture_proxy/commit/94fb40e81b7a1cdb5c6cc85bad1d68c4802d9ff6))
