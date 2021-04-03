@@ -11,6 +11,7 @@ import multidict
 from aiohttp import (
     ClientConnectionError,
     ClientSession,
+    ClientTimeout,
     MultipartReader,
     MultipartWriter,
     TooManyRedirects,
@@ -20,6 +21,7 @@ from aiohttp import (
 from aiohttp.client_reqrep import ClientResponse
 from yarl import URL
 
+from authcaptureproxy.const import SKIP_AUTO_HEADERS
 from authcaptureproxy.examples.modifiers import (
     prepend_relative_urls,
     replace_empty_action_urls,
@@ -48,7 +50,9 @@ class AuthCaptureProxy:
             session (ClientSession): Session to make aiohttp queries. Optional
 
         """
-        self.session: ClientSession = session if session else ClientSession()
+        self.session: ClientSession = (
+            session if session else ClientSession(timeout=ClientTimeout(total=30))
+        )
         self._proxy_url: URL = proxy_url
         self._host_url: URL = host_url
         self._port: int = proxy_url.explicit_port if proxy_url.explicit_port else 0  # type: ignore
@@ -343,8 +347,12 @@ class AuthCaptureProxy:
                         self._host_url,
                     )
             headers = await self.modify_headers(site, request)
+            skip_auto_headers: List[str] = headers.get(SKIP_AUTO_HEADERS, [])
+            if skip_auto_headers:
+                _LOGGER.debug("Discovered skip_auto_headers %s", skip_auto_headers)
+                headers.pop(SKIP_AUTO_HEADERS)
             _LOGGER.debug(
-                "Attempting %s to %s: \nheaders:%s \ncookies: %s",
+                "Attempting %s to %s\nheaders: %s \ncookies: %s",
                 method,
                 site,
                 headers,
@@ -353,15 +361,11 @@ class AuthCaptureProxy:
             try:
                 if mpwriter:
                     resp = await getattr(self.session, method)(
-                        site,
-                        data=mpwriter,
-                        headers=headers,
+                        site, data=mpwriter, headers=headers, skip_auto_headers=skip_auto_headers
                     )
                 elif data:
                     resp = await getattr(self.session, method)(
-                        site,
-                        data=data,
-                        headers=headers,
+                        site, data=data, headers=headers, skip_auto_headers=skip_auto_headers
                     )
                 elif json_data:
                     for item in ["Host", "Origin", "User-Agent", "dnt", "Accept-Encoding"]:
@@ -372,12 +376,11 @@ class AuthCaptureProxy:
                         site,
                         json=json_data,
                         headers=headers,
-                        # apparently headers aren't needed for Tesla case?
+                        skip_auto_headers=skip_auto_headers,
                     )
                 else:
                     resp = await getattr(self.session, method)(
-                        site,
-                        headers=headers,
+                        site, headers=headers, skip_auto_headers=skip_auto_headers
                     )
             except ClientConnectionError as ex:
                 return web.Response(text=f"Error connecting to {site}; please retry: {ex}")
@@ -547,6 +550,11 @@ class AuthCaptureProxy:
 
     async def modify_headers(self, site: URL, request: web.Request) -> multidict.MultiDict:
         """Modify headers.
+
+        Return modified headers based on site and request. To disable auto header generation,
+        pass in a key const.SKIP_AUTO_HEADERS with a list of keys to not generate.
+
+        For example, to prevent User-Agent generation: {SKIP_AUTO_HEADERS : ["User-Agent"]}
 
         Args:
             site (URL): URL of the next host request.
