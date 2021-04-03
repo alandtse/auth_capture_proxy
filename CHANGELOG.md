@@ -2,6 +2,10 @@
 
 <!--next-version-placeholder-->
 
+## v0.8.1 (2021-04-03)
+### Fix
+* Export const ([#12](https://github.com/alandtse/auth_capture_proxy/issues/12)) ([`afc6b7c`](https://github.com/alandtse/auth_capture_proxy/commit/afc6b7c50dcaca8e8ff3811672ce8610c376974a))
+
 ## v0.8.0 (2021-04-03)
 ### Feature
 * Allow disabling of header autogeneration ([#11](https://github.com/alandtse/auth_capture_proxy/issues/11)) ([`3eade2d`](https://github.com/alandtse/auth_capture_proxy/commit/3eade2deedf82c96bbf90724f5eee8c8a8a70234))
