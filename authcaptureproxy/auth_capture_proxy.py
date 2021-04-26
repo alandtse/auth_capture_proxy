@@ -7,18 +7,15 @@ from functools import partial
 from ssl import SSLContext
 from typing import Any, Callable, Dict, List, Optional, Text, Tuple, Union
 
-import multidict
+import httpx
 from aiohttp import (
     ClientConnectionError,
-    ClientSession,
-    ClientTimeout,
     MultipartReader,
     MultipartWriter,
     TooManyRedirects,
     hdrs,
     web,
 )
-from aiohttp.client_reqrep import ClientResponse
 from yarl import URL
 
 from authcaptureproxy.const import SKIP_AUTO_HEADERS
@@ -27,7 +24,14 @@ from authcaptureproxy.examples.modifiers import (
     replace_empty_action_urls,
     replace_matching_urls,
 )
-from authcaptureproxy.helper import get_nested_dict_keys, print_resp, run_func, swap_url
+from authcaptureproxy.helper import (
+    convert_multidict_to_dict,
+    get_content_type,
+    get_nested_dict_keys,
+    print_resp,
+    run_func,
+    swap_url,
+)
 from authcaptureproxy.stackoverflow import get_open_port
 
 _LOGGER = logging.getLogger(__name__)
@@ -40,24 +44,22 @@ class AuthCaptureProxy:
     """
 
     def __init__(
-        self, proxy_url: URL, host_url: URL, session: Optional[ClientSession] = None
+        self, proxy_url: URL, host_url: URL, session: Optional[httpx.AsyncClient] = None
     ) -> None:
         """Initialize proxy object.
 
         Args:
             proxy_url (URL): url for proxy location. e.g., http://192.168.1.1/. If there is any path, the path is considered part of the base url. If no explicit port is specified, a random port will be generated. If https is passed in, ssl_context must be provided at start_proxy() or the url will be downgraded to http.
             host_url (URL): original url for login, e.g., http://amazon.com
-            session (ClientSession): Session to make aiohttp queries. Optional
+            session (httpx.AsyncClient): Session to make aiohttp queries. Optional
 
         """
-        self.session: ClientSession = (
-            session if session else ClientSession(timeout=ClientTimeout(total=30))
-        )
+        self.session: httpx.AsyncClient = session if session else httpx.AsyncClient()
         self._proxy_url: URL = proxy_url
         self._host_url: URL = host_url
         self._port: int = proxy_url.explicit_port if proxy_url.explicit_port else 0  # type: ignore
         self.runner: Optional[web.AppRunner] = None
-        self.last_resp: Optional[ClientResponse] = None
+        self.last_resp: Optional[httpx.Response] = None
         self.init_query: Dict[Text, Any] = {}
         self.query: Dict[Text, Any] = {}
         self.data: Dict[Text, Any] = {}
@@ -103,7 +105,7 @@ class AuthCaptureProxy:
     def tests(self) -> Dict[Text, Callable]:
         """Return tests setting.
 
-        :setter: value (Dict[Text, Any]): A dictionary of tests. The key should be the name of the test and the value should be a function or coroutine that takes a ClientResponse, a dictionary of post variables, and a dictioary of query variables and returns a URL or string. See :mod:`authcaptureproxy.examples.testers` for examples.
+        :setter: value (Dict[Text, Any]): A dictionary of tests. The key should be the name of the test and the value should be a function or coroutine that takes a httpx.Response, a dictionary of post variables, and a dictioary of query variables and returns a URL or string. See :mod:`authcaptureproxy.examples.testers` for examples.
         """
         return self._tests
 
@@ -159,11 +161,9 @@ class AuthCaptureProxy:
 
         A proxy may need to service multiple login requests if the route is not torn down. This function will reset all data between logins.
         """
-        if self.session and not self.session.closed:
-            if self.session._connector_owner and self.session._connector:
-                await self.session._connector.close()
-            self.session._connector = None
-        self.session = ClientSession()
+        if self.session:
+            await self.session.aclose()
+        self.session = httpx.AsyncClient()
         self.last_resp = None
         self.init_query = {}
         self.query = {}
@@ -278,11 +278,11 @@ class AuthCaptureProxy:
         if not self.all_handler_active:
             _LOGGER.debug("%s all_handler is disabled; returning 404.", self)
             raise web.HTTPNotFound()
-        if not self.session:
-            self.session = ClientSession()
+        # if not self.session:
+        #     self.session = httpx.AsyncClient()
         method = request.method.lower()
-        _LOGGER.debug("Received %s: %s for %s", method, request.url, self._host_url)
-        resp: Optional[ClientResponse] = None
+        _LOGGER.debug("Received %s: %s for %s", method, str(request.url), self._host_url)
+        resp: Optional[httpx.Response] = None
         old_url: URL = (
             self.access_url().with_host(request.url.host)
             if request.url.host and request.url.host != self.access_url().host
@@ -291,27 +291,31 @@ class AuthCaptureProxy:
         if request.scheme == "http" and self.access_url().scheme == "https":
             # detect reverse proxy downgrade
             _LOGGER.debug("Detected http while should be https; switching to https")
-            site: URL = swap_url(
-                ignore_query=True,
-                old_url=old_url,
-                new_url=self._host_url.with_path("/"),
-                url=request.url.with_scheme("https"),
+            site: str = str(
+                swap_url(
+                    ignore_query=True,
+                    old_url=old_url,
+                    new_url=self._host_url.with_path("/"),
+                    url=URL(str(request.url)).with_scheme("https"),
+                ),
             )
         else:
-            site = swap_url(
-                ignore_query=True,
-                old_url=old_url,
-                new_url=self._host_url.with_path("/"),
-                url=request.url,
+            site = str(
+                swap_url(
+                    ignore_query=True,
+                    old_url=old_url,
+                    new_url=self._host_url.with_path("/"),
+                    url=URL(str(request.url)),
+                ),
             )
         self.query.update(request.query)
-        data = None
+        data: Optional[Dict] = None
         mpwriter = None
         if request.content_type == "multipart/form-data":
             mpwriter = MultipartWriter()
             await _process_multipart(await request.multipart(), mpwriter)
         else:
-            data = await request.post()
+            data = convert_multidict_to_dict(await request.post())
         json_data = None
         if request.has_body:
             json_data = await request.json()
@@ -321,67 +325,64 @@ class AuthCaptureProxy:
         elif json_data:
             self.data.update(json_data)
             _LOGGER.debug("Storing json %s", json_data)
-        if request.url.path == self._proxy_url.with_path(f"{self._proxy_url.path}/stop").path:
+        if URL(str(request.url)).path == self._proxy_url.with_path(
+            f"{self._proxy_url.path}/stop"
+        ).path.replace("//", "/"):
             self.all_handler_active = False
             if self.active:
                 asyncio.create_task(self.stop_proxy(3))
             return web.Response(text="Proxy stopped.")
         elif (
-            request.url.path == self._proxy_url.with_path(f"{self._proxy_url.path}/resume").path
+            URL(str(request.url)).path
+            == self._proxy_url.with_path(f"{self._proxy_url.path}/resume").path.replace("//", "/")
             and self.last_resp
         ):
             self.init_query = self.query.copy()
             _LOGGER.debug("Resuming request: %s", self.last_resp)
             resp = self.last_resp
         else:
-            if request.url.path in [
+            if URL(str(request.url)).path in [
                 self._proxy_url.path,
-                self._proxy_url.with_path(f"{self._proxy_url.path}/resume").path,
+                self._proxy_url.with_path(f"{self._proxy_url.path}/resume").path.replace("//", "/"),
             ]:
                 # either base path or resume without anything to resume
-                site = URL(self._host_url)
+                site = str(URL(self._host_url))
                 if method == "get":
                     self.init_query = self.query.copy()
                     _LOGGER.debug(
                         "Starting auth capture proxy for %s",
                         self._host_url,
                     )
-            headers = await self.modify_headers(site, request)
+            headers = await self.modify_headers(URL(site), request)
             skip_auto_headers: List[str] = headers.get(SKIP_AUTO_HEADERS, [])
             if skip_auto_headers:
                 _LOGGER.debug("Discovered skip_auto_headers %s", skip_auto_headers)
                 headers.pop(SKIP_AUTO_HEADERS)
+            cookies = {}
+            for cookie, value in self.session.cookies.items():
+                cookies[cookie] = value
             _LOGGER.debug(
                 "Attempting %s to %s\nheaders: %s \ncookies: %s",
                 method,
                 site,
                 headers,
-                self.session.cookie_jar.filter_cookies(URL(site)),
+                cookies,
             )
             try:
                 if mpwriter:
-                    resp = await getattr(self.session, method)(
-                        site, data=mpwriter, headers=headers, skip_auto_headers=skip_auto_headers
-                    )
+                    resp = await getattr(self.session, method)(site, data=mpwriter, headers=headers)
                 elif data:
-                    resp = await getattr(self.session, method)(
-                        site, data=data, headers=headers, skip_auto_headers=skip_auto_headers
-                    )
+                    resp = await getattr(self.session, method)(site, data=data, headers=headers)
                 elif json_data:
                     for item in ["Host", "Origin", "User-Agent", "dnt", "Accept-Encoding"]:
                         # remove proxy headers
                         if headers.get(item):
                             headers.pop(item)
                     resp = await getattr(self.session, method)(
-                        site,
-                        json=json_data,
-                        headers=headers,
-                        skip_auto_headers=skip_auto_headers,
+                        site, json=json_data, headers=headers
                     )
                 else:
-                    resp = await getattr(self.session, method)(
-                        site, headers=headers, skip_auto_headers=skip_auto_headers
-                    )
+                    resp = await getattr(self.session, method)(site, headers=headers)
             except ClientConnectionError as ex:
                 return web.Response(text=f"Error connecting to {site}; please retry: {ex}")
             except TooManyRedirects as ex:
@@ -409,16 +410,16 @@ class AuthCaptureProxy:
                         return web.Response(text=result, content_type="text/html")
         else:
             _LOGGER.warning("Proxy has no tests; please set.")
-        content_type = resp.content_type
-        self.refresh_modifiers(resp.url)
+        content_type = get_content_type(resp)
+        self.refresh_modifiers(URL(str(resp.url)))
         if self.modifiers:
             modified: bool = False
             if content_type != "text/html" and content_type not in self.modifiers.keys():
                 text: Text = ""
             elif content_type != "text/html" and content_type in self.modifiers.keys():
-                text = await resp.text("utf-8")
+                text = resp.text
             else:
-                text = await resp.text()
+                text = resp.text
             if text:
                 for name, modifier in self.modifiers.items():
                     if isinstance(modifier, dict):
@@ -447,10 +448,12 @@ class AuthCaptureProxy:
         # pass through non parsed content
         _LOGGER.debug(
             "Passing through %s as %s",
-            request.url.name if request.url.name else request.url.path,
+            URL(str(request.url)).name
+            if URL(str(request.url)).name
+            else URL(str(request.url)).path,
             content_type,
         )
-        return web.Response(body=await resp.read(), content_type=content_type)
+        return web.Response(body=resp.content, content_type=content_type)
 
     async def start_proxy(
         self, host: Optional[Text] = None, ssl_context: Optional[SSLContext] = None
@@ -496,11 +499,9 @@ class AuthCaptureProxy:
             await self.runner.shutdown()
         _LOGGER.debug("Site runner closed")
         # close session
-        if self.session and not self.session.closed:
+        if self.session:
             _LOGGER.debug("Closing session")
-            if self.session._connector_owner:
-                if self.session._connector:
-                    await self.session._connector.close()
+            await self.session.aclose()
             _LOGGER.debug("Session closed")
         self._active = False
         _LOGGER.debug("Proxy stopped")
@@ -548,11 +549,11 @@ class AuthCaptureProxy:
             _LOGGER.debug("Unable to find %s and %s in %s", host_string, proxy_string, text)
             return text
 
-    async def modify_headers(self, site: URL, request: web.Request) -> multidict.MultiDict:
+    async def modify_headers(self, site: URL, request: web.Request) -> dict:
         """Modify headers.
 
         Return modified headers based on site and request. To disable auto header generation,
-        pass in a key const.SKIP_AUTO_HEADERS with a list of keys to not generate.
+        pass in to the header a key const.SKIP_AUTO_HEADERS with a list of keys to not generate.
 
         For example, to prevent User-Agent generation: {SKIP_AUTO_HEADERS : ["User-Agent"]}
 
@@ -561,32 +562,42 @@ class AuthCaptureProxy:
             request (web.Request): Proxy directed request. This will need to be changed for the actual host request.
 
         Returns:
-            multidict.MultiDict: Headers after modifications
+            dict: Headers after modifications
         """
-        # necessary since MultiDict.update did not appear to work
-        headers = multidict.MultiDict(request.headers)
-        result = {}
-        for k, value in headers.items():
-            result[k] = value
+        result: Dict[str, Any] = {}
+        result.update(request.headers)
         # _LOGGER.debug("Original headers %s", headers)
         if result.get("Host"):
             result.pop("Host")
         if result.get("Origin"):
             result["Origin"] = f"{site.with_path('')}"
-        if result.get("Referer") and URL(result.get("Referer", "")).query == self.init_query:
+        if result.get("Referer") and (
+            URL(result.get("Referer", "")).query == self.init_query
+            or URL(result.get("Referer", "")).path
+            == "/config/integrations"  # home-assistant referer
+        ):
             # Change referer for starting request; this may have query items we shouldn't pass
             result["Referer"] = str(self._host_url)
         elif result.get("Referer"):
             result["Referer"] = self._swap_proxy_and_host(
                 result.get("Referer", ""), domain_only=True
             )
-        for item in ["X-Forwarded-For", "X-Forwarded-Proto", "X-Forwarded-Scheme", "X-Real-IP"]:
+        for item in [
+            "Content-Length",
+            "X-Forwarded-For",
+            "X-Forwarded-Host",
+            "X-Forwarded-Port",
+            "X-Forwarded-Proto",
+            "X-Forwarded-Scheme",
+            "X-Forwarded-Server",
+            "X-Real-IP",
+        ]:
             # remove proxy headers
             if result.get(item):
                 result.pop(item)
-        # _LOGGER.debug("Final headers %s", result)
         result.update(self.headers if self.headers else {})
-        return multidict.MultiDict(result)
+        _LOGGER.debug("Final headers %s", result)
+        return result
 
     def check_redirects(self) -> None:
         """Change host if redirect detected and regex does not match self.redirect_filters.
@@ -595,11 +606,13 @@ class AuthCaptureProxy:
         """
         if not self.last_resp:
             return
-        resp: ClientResponse = self.last_resp
+        resp: httpx.Response = self.last_resp
         if resp.history:
             for item in resp.history:
                 if (
-                    item.status in [301, 302, 303, 304, 305, 306, 307, 308]
+                    item.status_code in [301, 302, 303, 304, 305, 306, 307, 308]
+                    and item.url
+                    and resp.url
                     and resp.url.host != self._host_url.host
                 ):
                     filtered = False
@@ -630,8 +643,8 @@ class AuthCaptureProxy:
                         return
                     _LOGGER.debug(
                         "Detected %s redirect from %s to %s; changing proxy host",
-                        item.status,
+                        item.status_code,
                         item.url.host,
                         resp.url.host,
                     )
-                    self._host_url = self._host_url.with_host(str(resp.url.host))
+                    self._host_url = self._host_url.with_host(resp.url.host)
