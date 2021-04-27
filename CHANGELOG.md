@@ -2,6 +2,13 @@
 
 <!--next-version-placeholder-->
 
+## v1.0.0 (2021-04-27)
+### Fix
+* Swap to httpx ([#13](https://github.com/alandtse/auth_capture_proxy/issues/13)) ([`311e998`](https://github.com/alandtse/auth_capture_proxy/commit/311e998b287dc445d002e5e1aceebe17e82adb65))
+
+### Breaking
+* API has changed due to use of httpx. Modifiers, test_url, and other items that access aiohttp ClientResponse will need to be fixed.  ([`311e998`](https://github.com/alandtse/auth_capture_proxy/commit/311e998b287dc445d002e5e1aceebe17e82adb65))
+
 ## v0.8.1 (2021-04-03)
 ### Fix
 * Export const ([#12](https://github.com/alandtse/auth_capture_proxy/issues/12)) ([`afc6b7c`](https://github.com/alandtse/auth_capture_proxy/commit/afc6b7c50dcaca8e8ff3811672ce8610c376974a))
