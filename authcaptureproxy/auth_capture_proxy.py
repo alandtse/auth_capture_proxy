@@ -571,6 +571,9 @@ class AuthCaptureProxy:
             result.pop("Host")
         if result.get("Origin"):
             result["Origin"] = f"{site.with_path('')}"
+        # remove any cookies in header received from browser. If not removed, httpx will not send session cookies
+        if result.get("Cookie"):
+            result.pop("Cookie")
         if result.get("Referer") and (
             URL(result.get("Referer", "")).query == self.init_query
             or URL(result.get("Referer", "")).path
