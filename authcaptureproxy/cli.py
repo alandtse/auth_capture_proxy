@@ -89,7 +89,7 @@ async def proxy_example(
         """Test for a successful Amazon URL.
 
         Args:
-            resp (httpx.Response): The aiohttp response.
+            resp (httpx.Response): The httpx response.
             data (Dict[Text, Any]): Dictionary of all post data captured through proxy with overwrites for duplicate keys.
             query (Dict[Text, Any]): Dictionary of all query data with overwrites for duplicate keys.
 
