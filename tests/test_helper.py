@@ -1,4 +1,6 @@
 """Test the auth_capture proxy helper."""
+from httpx import Response
+from multidict import MultiDict, MultiDictProxy
 from yarl import URL
 
 import authcaptureproxy.helper as helper
@@ -7,6 +9,11 @@ EMPTY_URL = URL("")
 VALID_URL = URL("http://www.google.com")
 RELATIVE_URL = URL("/test/asdf")
 ABSOLUTE_URL = URL("http://example.com")
+TEST_DICT = {"a": "b", "b": 9}
+TEST_MULTIDICT = MultiDict(TEST_DICT)
+DICT_WITH_REPEAT = {"a": ["b", "abc"], "b": 9}
+TEST_MULTIDICT_WITH_REPEAT = MultiDict(TEST_DICT)
+TEST_MULTIDICT_WITH_REPEAT.add("a", "abc")
 
 
 def test_prepend_url():
@@ -43,3 +50,38 @@ def test_replace_empty_url():
         VALID_URL,
     )
     assert EMPTY_URL == helper.replace_empty_url(EMPTY_URL, EMPTY_URL)
+
+
+def test_get_content_type():
+    """Test ability to pull content_type correctly."""
+    # upper case
+    assert (
+        helper.get_content_type(Response(status_code=200, headers={"Content-Type": "text/html"}))
+        == "text/html"
+    )
+    # lower case
+    assert (
+        helper.get_content_type(Response(status_code=200, headers={"content-type": "text/html"}))
+        == "text/html"
+    )
+    # spaces
+    assert (
+        helper.get_content_type(
+            Response(status_code=200, headers={"Content-Type": "application/json; charset=utf-8"})
+        )
+        == "application/json"
+    )
+    # no spaces
+    assert (
+        helper.get_content_type(
+            Response(status_code=200, headers={"Content-Type": "application/json;charset=utf-8"})
+        )
+        == "application/json"
+    )
+
+
+def test_convert_multidict_to_dict():
+    """Test conversion fo multidict to dict."""
+    assert TEST_DICT == helper.convert_multidict_to_dict(TEST_MULTIDICT)
+    assert TEST_DICT == helper.convert_multidict_to_dict(MultiDictProxy(TEST_MULTIDICT))
+    assert DICT_WITH_REPEAT == helper.convert_multidict_to_dict(TEST_MULTIDICT_WITH_REPEAT)
