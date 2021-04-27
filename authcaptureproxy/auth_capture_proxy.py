@@ -51,7 +51,7 @@ class AuthCaptureProxy:
         Args:
             proxy_url (URL): url for proxy location. e.g., http://192.168.1.1/. If there is any path, the path is considered part of the base url. If no explicit port is specified, a random port will be generated. If https is passed in, ssl_context must be provided at start_proxy() or the url will be downgraded to http.
             host_url (URL): original url for login, e.g., http://amazon.com
-            session (httpx.AsyncClient): Session to make aiohttp queries. Optional
+            session (httpx.AsyncClient): httpx client to make queries. Optional
 
         """
         self.session: httpx.AsyncClient = session if session else httpx.AsyncClient()
