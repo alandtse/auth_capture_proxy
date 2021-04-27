@@ -12,8 +12,8 @@ import time
 from functools import partial, wraps
 from typing import Any, Dict, Text
 
+import httpx
 import typer
-from aiohttp import ClientResponse
 from yarl import URL
 
 from authcaptureproxy import AuthCaptureProxy, __copyright__, __title__, __version__, metadata
@@ -85,11 +85,11 @@ async def proxy_example(
         callback_url = URL(callback)
     proxy_obj: AuthCaptureProxy = AuthCaptureProxy(proxy_url=proxy_url, host_url=host_url)
 
-    def test_url(resp: ClientResponse, data: Dict[Text, Any], query: Dict[Text, Any]):
+    def test_url(resp: httpx.Response, data: Dict[Text, Any], query: Dict[Text, Any]):
         """Test for a successful Amazon URL.
 
         Args:
-            resp (ClientResponse): The aiohttp response.
+            resp (httpx.Response): The httpx response.
             data (Dict[Text, Any]): Dictionary of all post data captured through proxy with overwrites for duplicate keys.
             query (Dict[Text, Any]): Dictionary of all query data with overwrites for duplicate keys.
 
@@ -104,7 +104,7 @@ async def proxy_example(
             asyncio.create_task(proxy_obj.stop_proxy(3))  # stop proxy in 3 seconds
             if callback_url:
                 return URL(callback_url)  # 302 redirect
-            return f"Successfully logged in {data.get('email')} and {data.get('password')}. Please close the window.<br /><b>Post data</b><br />{json.dumps(data)}<br /><b>Query Data:</b><br />{json.dumps(query)}<br /><b>Cookies:</b></br>{proxy_obj.session.cookie_jar.filter_cookies(proxy_obj._host_url.with_path('/'))}"
+            return f"Successfully logged in {data.get('email')} and {data.get('password')}. Please close the window.<br /><b>Post data</b><br />{json.dumps(data)}<br /><b>Query Data:</b><br />{json.dumps(query)}<br /><b>Cookies:</b></br>{json.dumps(list(proxy_obj.session.cookies.items()))}"
 
     await proxy_obj.start_proxy()
     # add tests and modifiers after the proxy has started so that port data is available for self.access_url()

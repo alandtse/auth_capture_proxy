@@ -7,7 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 
 from unittest.mock import patch, create_autospec
 
-from aiohttp import ClientSession
+from httpx import AsyncClient
 from pytest import fixture
 from yarl import URL
 
@@ -18,17 +18,17 @@ PROXY_URL = URL("https://www.proxy.com/proxy")
 
 
 @fixture
-@patch("authcaptureproxy.auth_capture_proxy.ClientSession")
+@patch("authcaptureproxy.auth_capture_proxy.httpx.AsyncClient")
 def basic_proxy(mock):
     """Return an initialized proxy object."""
-    mock.return_value = create_autospec(ClientSession)
+    mock.return_value = create_autospec(AsyncClient)
     return AuthCaptureProxy(PROXY_URL, HOST_URL)
 
 
 def test_authcaptureproxy_init(basic_proxy):
     """Test initialization of authcaptureproxy."""
     proxy = basic_proxy
-    assert isinstance(proxy.session, ClientSession)
+    assert isinstance(proxy.session, AsyncClient)
     assert proxy._proxy_url == PROXY_URL
     assert proxy._host_url == HOST_URL
     assert proxy.port == 0

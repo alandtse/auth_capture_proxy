@@ -11,39 +11,37 @@ from asyncio import iscoroutinefunction
 from http.cookies import SimpleCookie
 from typing import Any, Callable, Dict, List, Mapping, Text, Union
 
-from aiohttp import ClientResponse
-from multidict import MultiDict
+import httpx
+from multidict import MultiDict, MultiDictProxy
 from yarl import URL
 
 _LOGGER = logging.getLogger(__name__)
 
 
-def print_resp(resp: ClientResponse) -> None:
+def print_resp(resp: httpx.Response) -> None:
     """Print response info.
 
     Args:
-        resp (ClientResponse): The client response to show
+        resp (httpx.Response): The client response to show
 
     Returns:
         None
     """
     if resp.history:
         for item in resp.history:
-            _LOGGER.debug("%s: redirected from\n%s", item.method, item.url)
-    url = resp.request_info.url
-    method = resp.request_info.method
-    status = resp.status
-    reason = resp.reason
-    headers = ast.literal_eval(
-        str(resp.request_info.headers).replace("<CIMultiDictProxy(", "{").replace(")>", "}")
-    )
+            _LOGGER.debug("%s: redirected from\n%s", item.request.method, item.url)
+    url = resp.request.url
+    method = resp.request.method
+    status = resp.status_code
+    reason = resp.reason_phrase
+    headers = ast.literal_eval(str(resp.request.headers)[8:-1])
     cookies = {}
-    if headers.get("Cookie"):
+    if headers.get("cookie"):
         cookie: SimpleCookie = SimpleCookie()
-        cookie.load(headers.get("Cookie"))
+        cookie.load(headers.get("cookie"))
         for key, morsel in cookie.items():
             cookies[key] = morsel.value
-        headers["Cookie"] = cookies
+        headers["cookie"] = cookies
     _LOGGER.debug(
         "%s: \n%s with\n%s\nreturned %s:%s with response %s",
         method,
@@ -194,4 +192,47 @@ def get_nested_dict_keys(
             result += get_nested_dict_keys(value)
         else:
             result.append(key)
+    return result
+
+
+def get_content_type(resp: httpx.Response) -> str:
+    """Get content_type from httpx Response.
+
+    Args:
+        resp (httpx.Response): Response from httpx request
+
+    Returns:
+        str: The content_type
+    """
+    content_type = ""
+    content_type_string = resp.headers.get("content-type")
+    if content_type_string and ";" in content_type_string:
+        content_type = content_type_string.split(";")[0].strip()
+    elif content_type_string:
+        content_type = content_type_string
+    return content_type
+
+
+def convert_multidict_to_dict(multidict: Union[MultiDict, MultiDictProxy]) -> dict:
+    """Convert a multdict to a dict for httpx.
+
+    https://www.python-httpx.org/quickstart/#sending-form-encoded-data
+
+    Args:
+        multidict (MultiDict | MultiDictProxy): The multidict to convert
+
+    Returns:
+        dict: A dictionary where duplicate keys will be added as a list
+    """
+    result: dict = {}
+    for k, v in multidict.items():
+        old_value = result.get(k)
+        if old_value:
+            list_value = []
+            if not isinstance(old_value, list):
+                list_value.append(old_value)
+            list_value.append(v)
+            result[k] = list_value
+        else:
+            result[k] = v
     return result
