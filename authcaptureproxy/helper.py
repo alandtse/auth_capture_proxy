@@ -228,8 +228,9 @@ def convert_multidict_to_dict(multidict: Union[MultiDict, MultiDictProxy]) -> di
     for k, v in multidict.items():
         old_value = result.get(k)
         if old_value:
+            list_value = []
             if not isinstance(old_value, list):
-                list_value = list(old_value)
+                list_value.append(old_value)
             list_value.append(v)
             result[k] = list_value
         else:
