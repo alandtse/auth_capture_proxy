@@ -101,7 +101,7 @@ multidict = "^5.1.0"
 yarl = "^1.6.3"
 importlib-metadata = "^3.4.0"
 beautifulsoup4 = "^4.9.3"
-httpx = "^0.17.1"
+httpx = ">=0.17.1, <1.0"
 
 [tool.poetry.dev-dependencies]
 # TODO Remove build dependencies you don't want (like xdoctest, perhaps)
