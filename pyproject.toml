@@ -2,17 +2,9 @@
 description-file = "README.md"
 
 [build-system]
-# This section instructs pip on how to install
-# In particular, it should install using Poetry's `poetry.masonry.api` build
-# And that it requires certain versions of poetry, virtualenv, and wheel
-# See https://www.python.org/dev/peps/pep-0518/ for how this works
-# == A note about these default choices ==
-# virtualenv 20.0.34 partly breaks pre-commit under conda
-# https://github.com/ContinuumIO/anaconda-issues/issues/12094
-# Poetry uses pip and setuptools (although they're not included as dependencies)
-# We don't need to list wheel here, but setting a min vr can avoid generating inferior wheels
-requires = ["poetry>=1.1,<2", "virtualenv==20.0.33", "wheel>=0.36,<1.0"]
-build-backend = "poetry.masonry.api"
+# https://github.com/python-poetry/poetry-core#usage
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
 
 
 #########################################################################################
