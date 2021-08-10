@@ -2,6 +2,10 @@
 
 <!--next-version-placeholder-->
 
+## v1.0.2 (2021-08-10)
+### Fix
+* Fix multiple cookie error in debug ([#17](https://github.com/alandtse/auth_capture_proxy/issues/17)) ([`f1cd671`](https://github.com/alandtse/auth_capture_proxy/commit/f1cd671b63dd495b2c90aefd51c59a8fbc004cae))
+
 ## v1.0.1 (2021-05-01)
 ### Fix
 * Relax dependency versions ([`55c12ce`](https://github.com/alandtse/auth_capture_proxy/commit/55c12ce0ac96d232e1790824360d745ecbf27163))
