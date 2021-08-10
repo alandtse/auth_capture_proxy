@@ -358,15 +358,12 @@ class AuthCaptureProxy:
             if skip_auto_headers:
                 _LOGGER.debug("Discovered skip_auto_headers %s", skip_auto_headers)
                 headers.pop(SKIP_AUTO_HEADERS)
-            cookies = {}
-            for cookie, value in self.session.cookies.items():
-                cookies[cookie] = value
             _LOGGER.debug(
                 "Attempting %s to %s\nheaders: %s \ncookies: %s",
                 method,
                 site,
                 headers,
-                cookies,
+                self.session.cookies.jar,
             )
             try:
                 if mpwriter:
