@@ -336,6 +336,7 @@ class AuthCaptureProxy:
             URL(str(request.url)).path
             == self._proxy_url.with_path(f"{self._proxy_url.path}/resume").path.replace("//", "/")
             and self.last_resp
+            and isinstance(self.last_resp, httpx.Response)
         ):
             self.init_query = self.query.copy()
             _LOGGER.debug("Resuming request: %s", self.last_resp)
