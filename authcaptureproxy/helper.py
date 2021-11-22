@@ -7,6 +7,7 @@ Helper files.
 import ast
 import json
 import logging
+from aiohttp import ClientResponse
 from asyncio import iscoroutinefunction
 from http.cookies import SimpleCookie
 from typing import Any, Callable, Dict, List, Mapping, Text, Union
@@ -18,7 +19,7 @@ from yarl import URL
 _LOGGER = logging.getLogger(__name__)
 
 
-def print_resp(resp: httpx.Response) -> None:
+def print_resp(resp: Union[httpx.Response, ClientResponse]) -> None:
     """Print response info.
 
     Args:
@@ -27,6 +28,8 @@ def print_resp(resp: httpx.Response) -> None:
     Returns:
         None
     """
+    if not isinstance(resp, httpx.Response):
+        return print_resp_aiohttp(resp)
     if resp.history:
         for item in resp.history:
             _LOGGER.debug("%s: redirected from\n%s", item.request.method, item.url)
@@ -42,6 +45,43 @@ def print_resp(resp: httpx.Response) -> None:
         for key, morsel in cookie.items():
             cookies[key] = morsel.value
         headers["cookie"] = cookies
+    _LOGGER.debug(
+        "%s: \n%s with\n%s\nreturned %s:%s with response %s",
+        method,
+        url,
+        json.dumps(headers),
+        status,
+        reason,
+        resp.headers,
+    )
+
+
+def print_resp_aiohttp(resp: ClientResponse) -> None:
+    """Print response info.
+
+    Args:
+        resp (ClientResponse): The client response to show
+
+    Returns:
+        None
+    """
+    if resp.history:
+        for item in resp.history:
+            _LOGGER.debug("%s: redirected from\n%s", item.method, item.url)
+    url = resp.request_info.url
+    method = resp.request_info.method
+    status = resp.status
+    reason = resp.reason
+    headers = ast.literal_eval(
+        str(resp.request_info.headers).replace("<CIMultiDictProxy(", "{").replace(")>", "}")
+    )
+    cookies = {}
+    if headers.get("Cookie"):
+        cookie: SimpleCookie = SimpleCookie()
+        cookie.load(headers.get("Cookie"))
+        for key, morsel in cookie.items():
+            cookies[key] = morsel.value
+        headers["Cookie"] = cookies
     _LOGGER.debug(
         "%s: \n%s with\n%s\nreturned %s:%s with response %s",
         method,

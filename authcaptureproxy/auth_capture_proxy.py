@@ -417,6 +417,8 @@ class AuthCaptureProxy:
                 text = resp.text
             else:
                 text = resp.text
+            if not isinstance(text, str):  # process aiohttp text
+                text = await resp.text()
             if text:
                 for name, modifier in self.modifiers.items():
                     if isinstance(modifier, dict):
