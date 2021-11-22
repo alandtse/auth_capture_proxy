@@ -253,21 +253,24 @@ def get_content_type(resp: httpx.Response) -> str:
     return content_type
 
 
-def convert_multidict_to_dict(multidict: Union[MultiDict, MultiDictProxy]) -> dict:
+def convert_multidict_to_dict(
+    multidict: Union[MultiDict, MultiDictProxy], flat: bool = False
+) -> dict:
     """Convert a multdict to a dict for httpx.
 
     https://www.python-httpx.org/quickstart/#sending-form-encoded-data
 
     Args:
         multidict (MultiDict | MultiDictProxy): The multidict to convert
+        flat (bool): whether to create a list for duplicates or keep last
 
     Returns:
-        dict: A dictionary where duplicate keys will be added as a list
+        dict: A dictionary where duplicate keys will be added as a list or flattened
     """
     result: dict = {}
     for k, v in multidict.items():
         old_value = result.get(k)
-        if old_value:
+        if old_value and not flat:
             list_value = []
             if not isinstance(old_value, list):
                 list_value.append(old_value)
