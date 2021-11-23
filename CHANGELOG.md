@@ -2,6 +2,10 @@
 
 <!--next-version-placeholder-->
 
+## v1.1.1 (2021-11-23)
+### Fix
+* Enable redirect following ([#18](https://github.com/alandtse/auth_capture_proxy/issues/18)) ([`0f011ac`](https://github.com/alandtse/auth_capture_proxy/commit/0f011accbb50412a54a9ca0a853cceb5a88a3ce6))
+
 ## v1.1.0 (2021-11-23)
 ### Feature
 * Bump for release ([`9ff7b15`](https://github.com/alandtse/auth_capture_proxy/commit/9ff7b159e91902801345b95a0d9cdcf24e5a8d04))
