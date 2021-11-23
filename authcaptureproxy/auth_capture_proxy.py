@@ -368,19 +368,25 @@ class AuthCaptureProxy:
             )
             try:
                 if mpwriter:
-                    resp = await getattr(self.session, method)(site, data=mpwriter, headers=headers)
+                    resp = await getattr(self.session, method)(
+                        site, data=mpwriter, headers=headers, follow_redirects=True
+                    )
                 elif data:
-                    resp = await getattr(self.session, method)(site, data=data, headers=headers)
+                    resp = await getattr(self.session, method)(
+                        site, data=data, headers=headers, follow_redirects=True
+                    )
                 elif json_data:
                     for item in ["Host", "Origin", "User-Agent", "dnt", "Accept-Encoding"]:
                         # remove proxy headers
                         if headers.get(item):
                             headers.pop(item)
                     resp = await getattr(self.session, method)(
-                        site, json=json_data, headers=headers
+                        site, json=json_data, headers=headers, follow_redirects=True
                     )
                 else:
-                    resp = await getattr(self.session, method)(site, headers=headers)
+                    resp = await getattr(self.session, method)(
+                        site, headers=headers, follow_redirects=True
+                    )
             except ClientConnectionError as ex:
                 return web.Response(text=f"Error connecting to {site}; please retry: {ex}")
             except TooManyRedirects as ex:
