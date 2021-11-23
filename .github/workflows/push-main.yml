@@ -30,11 +30,13 @@ jobs:
       - name: Test with tox
         run: |
           tox -v
-      - name: Coveralls Python
-        uses: AndreMiras/coveralls-python-action@v20201129
-        with:
-          #github-token: #${{ secrets.GITHUB_TOKEN }}
-          github-token: ${{ secrets.COVERALLS_REPO_TOKEN }}
+      - name: Update coveralls
+        run: |
+          pip install coveralls coverage[toml]
+          coveralls
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_REPO_TOKEN }}
       - uses: codecov/codecov-action@v1
         with:
           verbose: true # optional (default = false)
