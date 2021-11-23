@@ -190,7 +190,7 @@ class AuthCaptureProxy:
         Args:
             site (Optional[URL], optional): The current site. Defaults to None.
         """
-        DEFAULT_MODIFIERS = {
+        DEFAULT_MODIFIERS = {  # noqa: N806
             "prepend_relative_urls": partial(prepend_relative_urls, self.access_url()),
             "change_host_to_proxy": partial(
                 replace_matching_urls,

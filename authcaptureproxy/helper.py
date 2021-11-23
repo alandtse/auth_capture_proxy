@@ -7,12 +7,12 @@ Helper files.
 import ast
 import json
 import logging
-from aiohttp import ClientResponse
 from asyncio import iscoroutinefunction
 from http.cookies import SimpleCookie
 from typing import Any, Callable, Dict, List, Mapping, Text, Union
 
 import httpx
+from aiohttp import ClientResponse
 from multidict import MultiDict, MultiDictProxy
 from yarl import URL
 
