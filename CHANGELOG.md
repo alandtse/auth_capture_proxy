@@ -2,6 +2,10 @@
 
 <!--next-version-placeholder-->
 
+## v1.1.0 (2021-11-23)
+### Feature
+* Bump for release ([`9ff7b15`](https://github.com/alandtse/auth_capture_proxy/commit/9ff7b159e91902801345b95a0d9cdcf24e5a8d04))
+
 ## v1.0.2 (2021-08-10)
 ### Fix
 * Fix multiple cookie error in debug ([#17](https://github.com/alandtse/auth_capture_proxy/issues/17)) ([`f1cd671`](https://github.com/alandtse/auth_capture_proxy/commit/f1cd671b63dd495b2c90aefd51c59a8fbc004cae))
