@@ -2,6 +2,10 @@
 
 <!--next-version-placeholder-->
 
+## v1.1.3 (2022-02-25)
+### Fix
+* Bump multidict ([`bf8c7c1`](https://github.com/alandtse/auth_capture_proxy/commit/bf8c7c13252d2042f07a8ad2de1e6aba188e6985))
+
 ## v1.1.2 (2022-02-25)
 ### Fix
 * Bump dependencies ([#19](https://github.com/alandtse/auth_capture_proxy/issues/19)) ([`76c9344`](https://github.com/alandtse/auth_capture_proxy/commit/76c9344d656bcff61996fb335b94ecf9c3b35804))
