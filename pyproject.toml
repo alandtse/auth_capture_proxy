@@ -86,10 +86,10 @@ auth_capture_proxy = "authcaptureproxy.cli:cli"
 [tool.poetry.dependencies]
 # TODO Add and remove dependencies here
 # These are dependencies that are included in the main package
-python                   = "^3.6.2"
+python                   = "^3.7"
 typer                    = ">=0.3, <1.0"
 aiohttp = "^3.7"
-multidict = "^5.1"
+multidict = "^6.0"
 yarl = "^1.6"
 importlib-metadata = ">=3.4.0"
 beautifulsoup4 = "^4.9"
