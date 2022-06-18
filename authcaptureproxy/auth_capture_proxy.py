@@ -294,7 +294,7 @@ class AuthCaptureProxy:
             site: str = str(
                 swap_url(
                     ignore_query=True,
-                    old_url=old_url,
+                    old_url=old_url.with_scheme("https"),
                     new_url=self._host_url.with_path("/"),
                     url=URL(str(request.url)).with_scheme("https"),
                 ),
