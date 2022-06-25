@@ -133,12 +133,12 @@ mypy                     = ">=0.790, <1.0"
 # that Tyrannosaurus set up for your project
 hypothesis               = "^6"
 xdoctest                 = ">=0.15, <1.0"
-python-semantic-release = "^7.13.2"
-coveralls = "^3.0.0"
-pytest-asyncio = "^0.14.0"
-tox-gh-actions = "^2.4.0"
-tox-poetry = "^0.3.0"
-isort = "^5.7.0"
+python-semantic-release = "^7"
+coveralls = "^3"
+pytest-asyncio = ">=0.14.0, <1"
+tox-gh-actions = ">=2.4.0, <3"
+tox-poetry = ">=0.3.0, <1"
+isort = "^5"
 
 [tool.poetry.extras]
 # These are referenced in the tox.ini with `extras = dev`
@@ -304,7 +304,7 @@ log_cli = true
 log_cli_level = "INFO"
 log_cli_format = "%(asctime)s [%(levelname)8s] %(name)s: %(message)s (%(filename)s:%(lineno)s)"
 log_cli_date_format = "%Y-%m-%d %H:%M:%S"
-
+asyncio_mode="strict"
 
 #########################################################################################
 # Commits & changelog generation
