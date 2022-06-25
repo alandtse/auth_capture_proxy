@@ -14,6 +14,11 @@ TEST_MULTIDICT = MultiDict(TEST_DICT)
 DICT_WITH_REPEAT = {"a": ["b", "abc"], "b": 9}
 TEST_MULTIDICT_WITH_REPEAT = MultiDict(TEST_DICT)
 TEST_MULTIDICT_WITH_REPEAT.add("a", "abc")
+HTTP_HA_URL = URL("http://external.ha.address/auth/alexamedia/proxy/ap/signin/132-0985073-7008765")
+HTTP_BASE_HA_URL = URL("http://external.ha.address/auth/alexamedia/proxy/")
+HTTPS_SWAP_URL = URL("https://www.amazon.com/ap/signin/132-0985073-7008765")
+TEST_SWAP_DICT = {"a": str(HTTP_HA_URL), "b": str(HTTP_HA_URL.with_scheme("https"))}
+TEST_SWAPPED_DICT = {"a": str(HTTPS_SWAP_URL), "b": str(HTTP_HA_URL.with_scheme("https"))}
 
 
 def test_prepend_url():
@@ -85,3 +90,52 @@ def test_convert_multidict_to_dict():
     assert TEST_DICT == helper.convert_multidict_to_dict(TEST_MULTIDICT)
     assert TEST_DICT == helper.convert_multidict_to_dict(MultiDictProxy(TEST_MULTIDICT))
     assert DICT_WITH_REPEAT == helper.convert_multidict_to_dict(TEST_MULTIDICT_WITH_REPEAT)
+
+
+def test_swap_url():
+    """Test swap url."""
+    assert HTTPS_SWAP_URL == helper.swap_url(
+        ignore_query=True,
+        old_url=HTTP_BASE_HA_URL,
+        new_url=HTTPS_SWAP_URL.with_path("/"),
+        url=HTTP_HA_URL,
+    )
+    assert HTTPS_SWAP_URL == helper.swap_url(
+        ignore_query=True,
+        old_url=HTTP_BASE_HA_URL.with_port(81234),
+        new_url=HTTPS_SWAP_URL.with_path("/"),
+        url=HTTP_HA_URL.with_port(81234),
+    )
+    # test strings
+    assert HTTPS_SWAP_URL == helper.swap_url(
+        ignore_query=True,
+        old_url=str(HTTP_BASE_HA_URL),
+        new_url=str(HTTPS_SWAP_URL.with_path("/")),
+        url=str(HTTP_HA_URL),
+    )
+    # test queries
+    assert HTTPS_SWAP_URL.with_query(TEST_DICT) == helper.swap_url(
+        ignore_query=True,
+        old_url=HTTP_BASE_HA_URL,
+        new_url=HTTPS_SWAP_URL.with_path("/"),
+        url=HTTP_HA_URL.with_query(TEST_DICT),
+    )
+    assert HTTPS_SWAP_URL.with_query(TEST_DICT) == helper.swap_url(
+        ignore_query=False,
+        old_url=HTTP_BASE_HA_URL,
+        new_url=HTTPS_SWAP_URL.with_path("/"),
+        url=HTTP_HA_URL.with_query(TEST_DICT),
+    )
+    # test queries with swaps
+    assert HTTPS_SWAP_URL.with_query(TEST_SWAP_DICT) == helper.swap_url(
+        ignore_query=True,
+        old_url=HTTP_BASE_HA_URL,
+        new_url=HTTPS_SWAP_URL.with_path("/"),
+        url=HTTP_HA_URL.with_query(TEST_SWAP_DICT),
+    )
+    assert HTTPS_SWAP_URL.with_query(TEST_SWAPPED_DICT) == helper.swap_url(
+        ignore_query=False,
+        old_url=HTTP_BASE_HA_URL,
+        new_url=HTTPS_SWAP_URL.with_path("/"),
+        url=HTTP_HA_URL.with_query(TEST_SWAP_DICT),
+    )
