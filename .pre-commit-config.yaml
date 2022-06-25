@@ -30,27 +30,27 @@ repos:
       - id: check-yaml
         exclude: ^recipes/.*
     repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v3.4.0
+    rev: v4.3.0
 
   # --- Commit msg checks ---
   - hooks:
       - id: commitizen
         stages: ["commit-msg"]
     repo: https://github.com/commitizen-tools/commitizen
-    rev: v2.14.0
+    rev: v2.27.1
 
   # --- Strip output from .ipynb files ---
   - hooks:
       - id: nbstripout
         files: ".ipynb"
     repo: https://github.com/kynan/nbstripout
-    rev: master
+    rev: 0.5.0
 
   # --- Linters ---
   - hooks:
       - id: dockerfile_lint
     repo: https://github.com/Lucas-C/pre-commit-hooks-nodejs
-    rev: v1.1.1
+    rev: v1.1.2
   - hooks:
       - id: black
     repo: https://github.com/psf/black
@@ -58,4 +58,4 @@ repos:
   - repo: https://github.com/pre-commit/mirrors-prettier
     hooks:
       - id: prettier
-    rev: v2.2.1
+    rev: v2.7.1
