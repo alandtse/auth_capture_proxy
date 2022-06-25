@@ -2,6 +2,10 @@
 
 <!--next-version-placeholder-->
 
+## v1.1.4 (2022-06-25)
+### Fix
+* Fix swap_url for http converted urls ([`2b672fa`](https://github.com/alandtse/auth_capture_proxy/commit/2b672fa3a9c86ecf4dd64d7fc7d66a8a7fa1d5ff))
+
 ## v1.1.3 (2022-02-25)
 ### Fix
 * Bump multidict ([`bf8c7c1`](https://github.com/alandtse/auth_capture_proxy/commit/bf8c7c13252d2042f07a8ad2de1e6aba188e6985))
