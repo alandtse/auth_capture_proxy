@@ -1583,7 +1583,7 @@ all = []
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.7"
-content-hash = "4bd9b72cdd424224170d7b6146b1cf90f0aef70a4df850db48a97872f1cc6cf5"
+content-hash = "2d7c9c989592739a86a3f7d0dfaa535fbd1227f3c6df6f92bdbeabc9817b1651"
 
 [metadata.files]
 aiohttp = [
