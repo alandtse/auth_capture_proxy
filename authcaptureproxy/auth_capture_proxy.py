@@ -141,7 +141,7 @@ class AuthCaptureProxy:
 
     def access_url(self) -> URL:
         """Return access url for proxy with port."""
-        return self._proxy_url.with_port(self.port)
+        return self._proxy_url.with_port(self.port) if self.port != 0 else self._proxy_url
 
     async def change_host_url(self, new_url: URL) -> None:
         """Change the host url of the proxy.
