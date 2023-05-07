@@ -45,4 +45,4 @@ def test_authcaptureproxy_init(basic_proxy):
     modifiers = proxy.modifiers.get("text/html")
     for modifier in ["prepend_relative_urls", "change_host_to_proxy"]:
         assert modifier in modifiers
-    assert proxy.access_url() == PROXY_URL.with_port(proxy.port)
+    assert proxy.access_url() == PROXY_URL

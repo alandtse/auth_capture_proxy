@@ -102,9 +102,9 @@ def test_swap_url():
     )
     assert HTTPS_SWAP_URL == helper.swap_url(
         ignore_query=True,
-        old_url=HTTP_BASE_HA_URL.with_port(81234),
+        old_url=HTTP_BASE_HA_URL.with_port(65535),
         new_url=HTTPS_SWAP_URL.with_path("/"),
-        url=HTTP_HA_URL.with_port(81234),
+        url=HTTP_HA_URL.with_port(65535),
     )
     # test strings
     assert HTTPS_SWAP_URL == helper.swap_url(
