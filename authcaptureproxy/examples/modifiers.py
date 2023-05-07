@@ -119,7 +119,9 @@ async def prepend_relative_urls(base_url: URL, html: Text) -> Text:
 
 
 async def find_regex_urls(
-    modifier: Optional[Callable] = None, patterns: Dict[Text, Text] = None, html: Text = ""
+    modifier: Optional[Callable] = None,
+    patterns: Optional[Dict[Text, Text]] = None,
+    html: Text = "",
 ) -> Text:
     """Find urls for based on regex.
 
@@ -155,8 +157,8 @@ async def find_regex_urls(
 
 async def find_urls_bs4(
     modifier: Optional[Callable] = None,
-    search: Dict[Text, Text] = None,
-    exceptions: Dict[Text, List[Text]] = None,
+    search: Optional[Dict[Text, Text]] = None,
+    exceptions: Optional[Dict[Text, List[Text]]] = None,
     html: Text = "",
 ) -> Text:
     """Find urls in html using bs4.
