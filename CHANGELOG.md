@@ -2,6 +2,10 @@
 
 <!--next-version-placeholder-->
 
+## v1.1.5 (2023-05-07)
+### Fix
+* **access_url:** Do not add port if 0 ([`ba9acb4`](https://github.com/alandtse/auth_capture_proxy/commit/ba9acb49f106a76c32f95ef3ef871444309597e0))
+
 ## v1.1.4 (2022-06-25)
 ### Fix
 * Fix swap_url for http converted urls ([`2b672fa`](https://github.com/alandtse/auth_capture_proxy/commit/2b672fa3a9c86ecf4dd64d7fc7d66a8a7fa1d5ff))
