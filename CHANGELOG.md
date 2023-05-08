@@ -2,6 +2,10 @@
 
 <!--next-version-placeholder-->
 
+## v1.2.0 (2023-05-08)
+### Feature
+* Require python 3.10 ([`9ede8e1`](https://github.com/alandtse/auth_capture_proxy/commit/9ede8e1961d9cd3ee188bd8145810c1003a004a3))
+
 ## v1.1.6 (2023-05-08)
 ### Fix
 * Require python 3.9 or greater ([`5ba1afd`](https://github.com/alandtse/auth_capture_proxy/commit/5ba1afdaf2cbdf16a82c7f40d2d56d145b8b369f))
