@@ -2,6 +2,10 @@
 
 <!--next-version-placeholder-->
 
+## v1.1.6 (2023-05-08)
+### Fix
+* Require python 3.9 or greater ([`5ba1afd`](https://github.com/alandtse/auth_capture_proxy/commit/5ba1afdaf2cbdf16a82c7f40d2d56d145b8b369f))
+
 ## v1.1.5 (2023-05-07)
 ### Fix
 * **access_url:** Do not add port if 0 ([`ba9acb4`](https://github.com/alandtse/auth_capture_proxy/commit/ba9acb49f106a76c32f95ef3ef871444309597e0))
