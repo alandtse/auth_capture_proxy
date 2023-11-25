@@ -325,16 +325,16 @@ class AuthCaptureProxy:
         elif json_data:
             self.data.update(json_data)
             _LOGGER.debug("Storing json %s", json_data)
-        if URL(str(request.url)).path == self._proxy_url.with_path(
-            f"{self._proxy_url.path}/stop"
-        ).path.replace("//", "/"):
+        if URL(str(request.url)).path == re.sub(
+            r"/+", "/", self._proxy_url.with_path(f"{self._proxy_url.path}/stop").path
+        ):
             self.all_handler_active = False
             if self.active:
                 asyncio.create_task(self.stop_proxy(3))
             return web.Response(text="Proxy stopped.")
         elif (
             URL(str(request.url)).path
-            == self._proxy_url.with_path(f"{self._proxy_url.path}/resume").path.replace("//", "/")
+            == re.sub(r"/+", "/", self._proxy_url.with_path(f"{self._proxy_url.path}/resume").path)
             and self.last_resp
             and isinstance(self.last_resp, httpx.Response)
         ):
@@ -344,7 +344,9 @@ class AuthCaptureProxy:
         else:
             if URL(str(request.url)).path in [
                 self._proxy_url.path,
-                self._proxy_url.with_path(f"{self._proxy_url.path}/resume").path.replace("//", "/"),
+                re.sub(
+                    r"/+", "/", self._proxy_url.with_path(f"{self._proxy_url.path}/resume").path
+                ),
             ]:
                 # either base path or resume without anything to resume
                 site = str(URL(self._host_url))

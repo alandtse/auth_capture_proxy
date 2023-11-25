@@ -7,6 +7,7 @@ Helper files.
 import ast
 import json
 import logging
+import re
 from asyncio import iscoroutinefunction
 from http.cookies import SimpleCookie
 from typing import Any, Callable, Dict, List, Mapping, Text, Union
@@ -169,13 +170,13 @@ def swap_url(
     if ignore_query:
         result = URL(url_string.replace(old_url_string, new_url_string))
         # clean up any // in path
-        return result.with_path(result.path.replace("//", "/")).with_query(old_query)
+        return result.with_path(re.sub(r"/+", "/", result.path)).with_query(old_query)
     new_query = {}
     for key, value in old_query.items():
         if value:
             new_query[key] = value.replace(old_url_string, new_url_string)
     result = URL(url_string.replace(old_url_string, new_url_string))
-    return result.with_path(result.path.replace("//", "/")).update_query(new_query)
+    return result.with_path(re.sub(r"/+", "/", result.path)).update_query(new_query)
 
 
 def prepend_url(base_url: URL, url: URL, encoded: bool = False) -> URL:
@@ -194,7 +195,7 @@ def prepend_url(base_url: URL, url: URL, encoded: bool = False) -> URL:
         query = url.query
         path = url.path
         return base_url.with_path(
-            f"{base_url.path}{path}".replace("//", "/"), encoded=encoded
+            re.sub(r"/+", "/", f"{base_url.path}{path}"), encoded=encoded
         ).with_query(query)
     return url
 
