@@ -18,7 +18,6 @@ def test_get_open_port():
             with patch(
                 "authcaptureproxy.stackoverflow.socket.socket.listen", autospec=True
             ) as listen:
-
                 # mock_socket = mock_socket.return_value
                 # mock_socket.socket.getsockname.return_value = ["0.0.0.0", 1]
                 port = get_open_port()
@@ -29,7 +28,7 @@ def test_get_open_port():
 
 
 def test_return_timer_countdown_refresh_html():
-    """Test return_timer_countdown_refresh_html."""
+    """Test return_timer_countdown_refresh_html with random content."""
     for _ in range(10):
         seconds = random.randint(0, 10000000)  # nosec
         text = "".join(
@@ -48,6 +47,60 @@ def test_return_timer_countdown_refresh_html():
             > 0
         )
         assert soup.find("body")
+        if text:
+            assert len(soup.find("body").contents) == 2
+            assert soup.find("body").contents[0] == text
+            assert soup.find("body").contents[1].name == "div"
+            assert soup.find("body").contents[1]["id"] == "countdown"
+        else:
+            assert len(soup.find("body").contents) == 1
+            assert soup.find("body").contents[0].name == "div"
+            assert soup.find("body").contents[0]["id"] == "countdown"
+
+
+def test_return_timer_countdown_refresh_html_empty_string():
+    """Test return_timer_countdown_refresh_html with null content."""
+    for _ in range(10):
+        seconds = random.randint(0, 10000000)  # nosec
+        text = ""
+        hard_refresh = seconds % 2 == 0
+        result = return_timer_countdown_refresh_html(seconds, text, hard_refresh)
+        soup = bs(result, "html.parser")
+        assert soup.find("script", defer="defer")
+        assert soup.find("script", defer="defer").contents[0].endswith(f"""({seconds});""")
+        assert (
+            soup.find("script", defer="defer")
+            .contents[0]
+            .find(f"""location.reload({str(hard_refresh).lower()});""")
+            > 0
+        )
+        assert soup.find("body")
+        assert len(soup.find("body").contents) == 1
+        assert soup.find("body").contents[0].name == "div"
+        assert soup.find("body").contents[0]["id"] == "countdown"
+
+
+def test_return_timer_countdown_refresh_html_non_empty_string():
+    """Test return_timer_countdown_refresh_html with random content."""
+    for _ in range(10):
+        seconds = random.randint(0, 10000000)  # nosec
+        text = "".join(
+            random.choice(string.ascii_letters + string.digits)  # nosec
+            for _ in range(random.randint(1, 200))  # nosec
+        )
+        hard_refresh = seconds % 2 == 0
+        result = return_timer_countdown_refresh_html(seconds, text, hard_refresh)
+        soup = bs(result, "html.parser")
+        assert soup.find("script", defer="defer")
+        assert soup.find("script", defer="defer").contents[0].endswith(f"""({seconds});""")
+        assert (
+            soup.find("script", defer="defer")
+            .contents[0]
+            .find(f"""location.reload({str(hard_refresh).lower()});""")
+            > 0
+        )
+        assert soup.find("body")
+        assert len(soup.find("body").contents) == 2
         assert soup.find("body").contents[0] == text
         assert soup.find("body").contents[1].name == "div"
         assert soup.find("body").contents[1]["id"] == "countdown"
