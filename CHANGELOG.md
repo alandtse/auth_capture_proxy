@@ -2,6 +2,12 @@
 
 <!--next-version-placeholder-->
 
+## v1.2.1 (2023-11-25)
+
+### Fix
+
+* Fix multiple / detection in urls ([`2352e22`](https://github.com/alandtse/auth_capture_proxy/commit/2352e22cabcf9c5fb39499f588026bac2462d18d))
+
 ## v1.2.0 (2023-05-08)
 ### Feature
 * Require python 3.10 ([`9ede8e1`](https://github.com/alandtse/auth_capture_proxy/commit/9ede8e1961d9cd3ee188bd8145810c1003a004a3))
