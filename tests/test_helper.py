@@ -7,6 +7,7 @@ import authcaptureproxy.helper as helper
 
 EMPTY_URL = URL("")
 VALID_URL = URL("http://www.google.com")
+VALID_URL_BACKSLASH = URL("http://www.google.com/")
 RELATIVE_URL = URL("/test/asdf")
 ABSOLUTE_URL = URL("http://example.com")
 TEST_DICT = {"a": "b", "b": 9}
@@ -25,6 +26,10 @@ def test_prepend_url():
     """Test that url is prepended for relative urls only."""
     assert helper.prepend_url(VALID_URL, RELATIVE_URL) == VALID_URL.with_path(RELATIVE_URL.path)
     assert helper.prepend_url(VALID_URL, ABSOLUTE_URL) == ABSOLUTE_URL
+    assert helper.prepend_url(VALID_URL_BACKSLASH, RELATIVE_URL) == VALID_URL.with_path(
+        RELATIVE_URL.path
+    )
+    assert helper.prepend_url(VALID_URL_BACKSLASH, ABSOLUTE_URL) == ABSOLUTE_URL
 
 
 def test_prepend_url_strings():
@@ -33,6 +38,10 @@ def test_prepend_url_strings():
         RELATIVE_URL.path
     )
     assert helper.prepend_url(str(VALID_URL), str(ABSOLUTE_URL)) == ABSOLUTE_URL
+    assert helper.prepend_url(str(VALID_URL_BACKSLASH), str(RELATIVE_URL)) == VALID_URL.with_path(
+        RELATIVE_URL.path
+    )
+    assert helper.prepend_url(str(VALID_URL_BACKSLASH), str(ABSOLUTE_URL)) == ABSOLUTE_URL
 
 
 def test_replace_empty_url_with_strings():

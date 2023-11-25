@@ -69,6 +69,18 @@ FORM_WITH_EMPTY_ACTION = """
   <input type="text" id="description" name="description" value="Old Data"><br>
 </form>
 """
+
+FORM_WITH_VERIFY_ACTION = """
+<form action="verify">
+  <label for="username">Name:</label><br>
+  <input type="text" id="username" name="username" value="Old Data"><br>
+  <label for="password">Password:</label><br>
+  <input type="password" id="password" name="password"value="Old Data" >
+  <label for="description">Description:</label><br>
+  <input type="text" id="description" name="description" value="Old Data"><br>
+</form>
+"""
+
 AUTOFILL_DICT = {"username": USERNAME, "password": PASSWORD}
 
 KNOWN_URLS_ATTRS = {
@@ -81,10 +93,20 @@ KNOWN_URLS_ATTRS = {
 
 PROXY_URL = "https://www.proxy.com"
 PROXY_URL_WITH_PATH = "https://www.proxy.com/oauth/path"
+PROXY_URL_BACKSLASH = "https://www.proxy.com/"
+PROXY_URL_WITH_PATH_BACKSLASH = "https://www.proxy.com/oauth/path/"
 HOST_URL = "https://www.host.com"
+HOST_URL_BACKSLASH = "https://www.host.com/"
 HOST_URL_WITH_PATH = "https://www.host.com/auth/path/test?attr=asdf"
-RELATIVE_URLS = ["asdf/asbklahef", "/root/asdf/b"]
-ABSOLUTE_URLS = [PROXY_URL, PROXY_URL_WITH_PATH, HOST_URL_WITH_PATH]
+RELATIVE_URLS = ["asdf/asbklahef", "/root/asdf/b", "/root/asdf/b/", "asdf/asbklahef/", "asdf/"]
+ABSOLUTE_URLS = [
+    PROXY_URL,
+    PROXY_URL_WITH_PATH,
+    HOST_URL_WITH_PATH,
+    PROXY_URL_BACKSLASH,
+    PROXY_URL_WITH_PATH_BACKSLASH,
+    HOST_URL_BACKSLASH,
+]
 
 
 def test_autofill():
@@ -189,8 +211,15 @@ async def test_prepend_relative_urls():
         FORM_NO_ID,
         build_random_html(url=start_url),
         FORM_WITH_EMPTY_ACTION,
+        FORM_WITH_VERIFY_ACTION,
     ]:
-        for url in [HOST_URL, HOST_URL_WITH_PATH, PROXY_URL, PROXY_URL_WITH_PATH]:
+        for url in [
+            HOST_URL,
+            HOST_URL_WITH_PATH,
+            PROXY_URL,
+            PROXY_URL_WITH_PATH,
+            HOST_URL_BACKSLASH,
+        ]:
             result = await modifiers.prepend_relative_urls(url, form)
             old_soup = bs(form, "html.parser")
             soup = bs(result, "html.parser")
@@ -205,7 +234,7 @@ async def test_prepend_relative_urls():
                         assert URL(new_url).is_absolute()
                         assert new_url.startswith(str(URL(url).with_query({})))
                         if old_url:
-                            assert new_url.endswith(start_url)
+                            assert new_url.endswith(old_url)
 
 
 @pytest.mark.asyncio
@@ -219,7 +248,7 @@ async def test_prepend_relative_urls_empty():
         FORM_NO_ID,
         build_random_html(url=start_url),
         FORM_WITH_EMPTY_ACTION,
+        FORM_WITH_VERIFY_ACTION,
     ]:
-
         result = await modifiers.prepend_relative_urls(NONE_URL, form)
         assert result == form
