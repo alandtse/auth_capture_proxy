@@ -25,10 +25,10 @@ jobs:
           python-version: "3.10"
       - name: Install build meta-dependencies
         run: |
-          pip install poetry tox
+          pip install poetry tox tox-gh-actions
       - name: Test with tox
         run: |
-          tox -v
+          tox
       - name: Update coveralls
         run: |
           pip install coveralls coverage[toml]
