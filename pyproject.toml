@@ -47,10 +47,10 @@ classifiers = [
     "Programming Language :: Python :: 3 :: Only",
     "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
-	"Intended Audience :: Developers",
+    "Intended Audience :: Developers",
     "Operating System :: OS Independent",
     "Environment :: Console",
-    "Topic :: Software Development :: Libraries :: Python Modules"
+    "Topic :: Software Development :: Libraries :: Python Modules",
 ]
 # These get packaged into the wheels
 # There are uncommon needs to read the readme, license, and/or changelog
@@ -58,11 +58,7 @@ classifiers = [
 # if you detect that the user is running a newer version than they were using before.
 # If you don't need this, you can remove these entries.
 # (You might also be able to package this pyproject.toml file and read metadata from it.)
-include = [
-    "README.md",
-    "LICENSE.txt",
-    "CHANGELOG.md"
-]
+include = ["README.md", "LICENSE.txt", "CHANGELOG.md"]
 
 [tool.poetry.urls]
 # 'CI', 'Issues', and 'Download' seem to have special meanings
@@ -86,8 +82,8 @@ auth_capture_proxy = "authcaptureproxy.cli:cli"
 [tool.poetry.dependencies]
 # TODO Add and remove dependencies here
 # These are dependencies that are included in the main package
-python                   = "^3.10"
-typer                    = ">=0.3, <1.0"
+python = "^3.10"
+typer = ">=0.3, <1.0"
 aiohttp = "^3"
 multidict = "^6"
 yarl = "^1"
@@ -107,32 +103,32 @@ httpx = "*"
 # and Github workflows (under `.github/workflows`) that Tyrannosaurus generated.
 # If you remove them, builds will always fail unless you also modify the build pipeline.
 # Note: We don't use flake8-bandit because it appears to be unmaintained
-bandit                   = ">=1.7, <2.0"
-black                    = ">=20.8b1"
-coverage                 = {extras = ["toml"], version = "^5"}
-flake8                   = "^3"
-flake8-bugbear           = "^20"
-flake8-docstrings        = "^1"
-pre-commit               = ">=2.9, <3.0"
-pre-commit-hooks         = ">=3.4, <4.0"
-pytest                   = "^6"
-pytest-cov               = "^2"
-sphinx                   = "^4"
-sphinx-autoapi           = "^1"
-sphinx-copybutton        = ">=0.3.1, <1.0"
-sphinx-rtd-theme         = ">=0.5, <1.0"
-tomlkit                  = ">=0.7, <1.0"
+bandit = ">=1.7, <2.0"
+black = ">=20.8b1"
+coverage = { extras = ["toml"], version = "^5" }
+flake8 = "^3"
+flake8-bugbear = "^20"
+flake8-docstrings = "^1"
+pre-commit = ">=2.9, <3.0"
+pre-commit-hooks = ">=3.4, <4.0"
+pytest = "^7"
+pytest-cov = "^2"
+sphinx = "^4"
+sphinx-autoapi = "^1"
+sphinx-copybutton = ">=0.3.1, <1.0"
+sphinx-rtd-theme = ">=0.5, <1.0"
+tomlkit = ">=0.7, <1.0"
 
 # These are used directly in the default build pipeline
 # ... but they're generally optional, and the build won't fail if you remove them
 # For example, `mypy` is called in `tox.ini`, but if it's removed then the line
 # will fail without causing the build to fail.
-mypy                     = ">=0.790, <1.0"
+mypy = ">=0.790, <1.0"
 
 # These are useful but are not used directly in the default build pipeline
 # that Tyrannosaurus set up for your project
-hypothesis               = "^6"
-xdoctest                 = ">=0.15, <1.0"
+hypothesis = "^6"
+xdoctest = ">=0.15, <1.0"
 python-semantic-release = "^7"
 coveralls = "^3"
 pytest-asyncio = ">=0.14.0, <1"
@@ -167,10 +163,10 @@ all = []
 [tool.tyrannosaurus.options]
 # This tells Tyrannosaurus to sort lines for things like dependencies
 # For example, it will sort dependencies in `[tool.poetry.dependencies]` alphabetically
-sort     = false
+sort = false
 # This tells Tyrannosaurus to align the columns in TOML files surrounding = signs
 # For example, see how `[tool.tyrannosaurus.targets]` is sorted in this file
-align    = true
+align = true
 
 [tool.tyrannosaurus.sources]
 # These tell Tyrannosaurus where to get information to copy
@@ -191,15 +187,15 @@ align    = true
 # (Don't forget the single quote marks in that example.)
 # pymetaversion is only used when building; e.g. in readthedocs, Docker, and Github workflows
 # (Note that this last one is not a list -- use single quotes but not brackets.)
-pycompatversions   = "tool.poetry.dependencies"
-pytoxversions      = "tool.poetry.dependencies"
-pymetaversion      = "'3.9'"
+pycompatversions = "tool.poetry.dependencies"
+pytoxversions = "tool.poetry.dependencies"
+pymetaversion = "'3.9'"
 
 # --- DEVELOPMENT PARAMS ---
 # virtual machine info used in Dockerfile and Github workflows
-metavm             = "'ubuntu-latest'"
+metavm = "'ubuntu-latest'"
 # Development dependencies
-devdeps            = "tool.poetry.dev-dependencies"
+devdeps = "tool.poetry.dev-dependencies"
 # Pick the latest versions compatible with the version ranges:
 #precommitvr        = "tool.poetry.dev-dependencies"
 #precommitconfigvr  = "tool.poetry.dev-dependencies"
@@ -207,12 +203,12 @@ devdeps            = "tool.poetry.dev-dependencies"
 # --- PROJECT INFO ---
 # These are used in dunders like __copyright__, docs/conf.py, and PyPi classifiers (like Development Status)
 # 2021-02-03 is the date you run it at, and 2021-02-03 16-44-50 -08:00 is the datetime
-status             = "'Development'"
-date               = "'2021-02-03'"
-copyright          = "'Copyright 2021'"
-version            = "tool.poetry.version"
-release            = "tool.poetry.version"
-long_description   = "tool.poetry.description"
+status = "'Development'"
+date = "'2021-02-03'"
+copyright = "'Copyright 2021'"
+version = "tool.poetry.version"
+release = "tool.poetry.version"
+long_description = "tool.poetry.description"
 # These describe the license for your documentation text
 # By default no license is mentioned;
 # uncomment these to display the license in the docs
@@ -229,15 +225,15 @@ long_description   = "tool.poetry.description"
 #authors = [
 #    "<<Author Name>> <github:<<username>>,orcid:<<id>>>"
 #]
-authors = ["Alan D. Tse <github:alandtse>" ]
-contributors = [ ]
+authors = ["Alan D. Tse <github:alandtse>"]
+contributors = []
 # Turn this into a literal list if it is different than the authors
 maintainers = "tool.tyrannosaurus.sources.authors"
 
 # --- CODING STYLE ---
-linelength         = "tool.black.line-length"
-importorderstyle   = "'google'"
-docstringstyle     = "'google'"
+linelength = "tool.black.line-length"
+importorderstyle = "'google'"
+docstringstyle = "'google'"
 
 
 # --- CODING STYLE IN PEP8 ---
@@ -253,7 +249,7 @@ docstringstyle     = "'google'"
 # Then add some more to 'test' if you're less concerned with your test file conventions
 # 212 and 213 contradict; 203 and 204 contradict; D302 is not relevant in Py3;
 # D107 isn't needed sometimes; and the rest just seem too picky
-all    = "'W503,E203,E225,E301,E302,E501,D107,D200,D205,D400,D403,D409,D410,D411,D212,W391,W293'"
+all = "'W503,E203,E225,E301,E302,E501,D107,D200,D205,D400,D403,D409,D410,D411,D212,W391,W293'"
 #authcaptureproxy  = ""
 #doc  = ""
 test = "'D100,D101,D102,D103,D104,S101,W503,E203,E225,E301,E302,E501,D107,D200,D205,D400,D403,D409,D410,D411,D212,W391,W293'"
@@ -266,22 +262,22 @@ test = "'D100,D101,D102,D103,D104,S101,W503,E203,E225,E301,E302,E501,D107,D200,D
 # They will only be synced if they exist; never created
 # To get a recipe and anaconda env, run 'tyrannosaurus recipe' and 'tyrannosaurus env'
 # Choices are only true or false
-pyproject    = true
-init         = true
-tox          = true
-precommit    = true
-docs         = true
-recipes      = true
-license      = true
-authors      = true
-github       = true
-travis       = true
-dockerfile   = true
-readme       = true
-changelog    = true
-citation     = true
-codemeta     = true
-environment  = false
+pyproject = true
+init = true
+tox = true
+precommit = true
+docs = true
+recipes = true
+license = true
+authors = true
+github = true
+travis = true
+dockerfile = true
+readme = true
+changelog = true
+citation = true
+codemeta = true
+environment = false
 
 
 #########################################################################################
@@ -304,7 +300,7 @@ log_cli = true
 log_cli_level = "INFO"
 log_cli_format = "%(asctime)s [%(levelname)8s] %(name)s: %(message)s (%(filename)s:%(lineno)s)"
 log_cli_date_format = "%Y-%m-%d %H:%M:%S"
-asyncio_mode="strict"
+asyncio_mode = "strict"
 
 #########################################################################################
 # Commits & changelog generation
@@ -326,10 +322,10 @@ name = "cz_conventional_commits"
 filename = "NEWS.md"
 
 [tool.semantic_release]
-version_variable="pyproject.toml:version"
-upload_to_pypi=true
-upload_to_release=true
-changelog_sections="feature,fix,breaking,documentation,performance,refactor"
+version_variable = "pyproject.toml:version"
+upload_to_pypi = true
+upload_to_release = true
+changelog_sections = "feature,fix,breaking,documentation,performance,refactor"
 build_command = "pip install poetry && poetry build"
 branch = "main"
 
