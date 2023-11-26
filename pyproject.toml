@@ -225,7 +225,10 @@ long_description = "tool.poetry.description"
 #    "<<Author Name>> <github:<<username>>,orcid:<<id>>>"
 #]
 authors = ["Alan D. Tse <github:alandtse>"]
-contributors = ["Alan D. Tse <github:alandtse>", "Parker Wahle <github:regulad>"]
+contributors = [
+    "Alan D. Tse <github:alandtse>",
+    "Parker Wahle <github:regulad>",
+]
 # Turn this into a literal list if it is different than the authors
 maintainers = "tool.tyrannosaurus.sources.authors"
 
@@ -323,7 +326,7 @@ filename = "NEWS.md"
 [tool.semantic_release]
 version_pattern = [
     'codemeta.json:"version": "{version}"',
-    'CITATION.cff:version: {version}',
+    'CITATION.cff:^version: {version}',
     'Dockerfile:LABEL version="{version}"',
     'Dockerfile:LABEL org.opencontainers.image.version="{version}"',
 ]
