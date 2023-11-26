@@ -225,7 +225,7 @@ long_description = "tool.poetry.description"
 #    "<<Author Name>> <github:<<username>>,orcid:<<id>>>"
 #]
 authors = ["Alan D. Tse <github:alandtse>"]
-contributors = []
+contributors = ["Alan D. Tse <github:alandtse>", "Parker Wahle <github:regulad>"]
 # Turn this into a literal list if it is different than the authors
 maintainers = "tool.tyrannosaurus.sources.authors"
 
