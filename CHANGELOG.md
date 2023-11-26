@@ -2,6 +2,12 @@
 
 <!--next-version-placeholder-->
 
+## v1.3.0 (2023-11-26)
+
+### Feature
+
+* Preserve custom headers and allow dynamic sessions ([`307bd06`](https://github.com/alandtse/auth_capture_proxy/commit/307bd06f36cde09810f5511d67438bd95aa78f68))
+
 ## v1.2.1 (2023-11-25)
 
 ### Fix
