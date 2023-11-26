@@ -58,7 +58,8 @@ class AuthCaptureProxy:
             proxy_url (URL): url for proxy location. e.g., http://192.168.1.1/. If there is any path, the path is considered part of the base url. If no explicit port is specified, a random port will be generated. If https is passed in, ssl_context must be provided at start_proxy() or the url will be downgraded to http.
             host_url (URL): original url for login, e.g., http://amazon.com
             session (httpx.AsyncClient): httpx client to make queries. Optional
-
+            session_factory (lambda: httpx.AsyncClient): factory to create the aforementioned httpx client if having one fixed session is insufficient.
+            preserve_headers (bool): Whether to preserve headers from the backend. Useful in circumventing CSRF protection. Defaults to False.
         """
         self._preserve_headers = preserve_headers
         self.session_factory: Callable[[], httpx.AsyncClient] = session_factory or (
@@ -231,12 +232,12 @@ class AuthCaptureProxy:
             _LOGGER.debug("Refreshed %s modifiers: %s", len(refreshed_modifers), refreshed_modifers)
 
     async def _build_response(
-        self, response: web.Response | None = None, *args, **kwargs
+        self, response: Optional[httpx.Response] = None, *args, **kwargs
     ) -> web.Response:
         """
         Build a response.
         """
-        if "headers" not in kwargs:
+        if "headers" not in kwargs and response is not None:
             kwargs["headers"] = response.headers.copy() if self._preserve_headers else CIMultiDict()
 
             if hdrs.CONTENT_TYPE in kwargs["headers"] and "content_type" in kwargs:
