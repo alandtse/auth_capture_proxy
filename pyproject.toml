@@ -321,6 +321,12 @@ name = "cz_conventional_commits"
 filename = "NEWS.md"
 
 [tool.semantic_release]
+version_pattern = [
+    'codemeta.json:"version": "{version}"',
+    'CITATION.cff:version: {version}',
+    'Dockerfile:LABEL version="{version}"',
+    'Dockerfile:LABEL org.opencontainers.image.version="{version}"',
+]
 version_variable = "pyproject.toml:version"
 upload_to_pypi = true
 upload_to_release = true
