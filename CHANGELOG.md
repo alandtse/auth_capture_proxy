@@ -2,6 +2,12 @@
 
 <!--next-version-placeholder-->
 
+## v1.3.1 (2023-11-29)
+
+### Fix
+
+* Automatically convert base_url from file url ([`08a396d`](https://github.com/alandtse/auth_capture_proxy/commit/08a396d6d8ca63c43f5eded5955b24f66187093d))
+
 ## v1.3.0 (2023-11-26)
 
 ### Feature

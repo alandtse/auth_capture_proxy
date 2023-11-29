@@ -1,7 +1,7 @@
 cff-version: 1.1.0
 message: Software reference
 title: auth_capture_proxy
-version: 1.3.0
+version: 1.3.1
 abstract: A Python project
 authors:
     - family-names: $${author.last#1}
