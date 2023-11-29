@@ -2,6 +2,12 @@
 
 <!--next-version-placeholder-->
 
+## v1.3.2 (2023-11-29)
+
+### Fix
+
+* Change base_url path warning to debug ([`68af0dd`](https://github.com/alandtse/auth_capture_proxy/commit/68af0dd94d45d8143dcf93bddee28ed6961394c7))
+
 ## v1.3.1 (2023-11-29)
 
 ### Fix

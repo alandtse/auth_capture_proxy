@@ -7,7 +7,7 @@
   "codeRepository": "https://github.com/alandtse/auth_capture_proxy",
   "issueTracker": "https://github.com/alandtse/auth_capture_proxy/issues",
   "license": "https://spdx.org/licenses/Apache-2.0.html",
-  "version": "1.3.1",
+  "version": "1.3.2",
   "author": [
     {
       "@type": "Person",
