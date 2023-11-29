@@ -192,7 +192,7 @@ def prepend_url(base_url: URL, url: URL, encoded: bool = False) -> URL:
     if isinstance(url, str):
         url = URL(url)
     if base_url.name:
-        _LOGGER.warn("Base URL is to file %s, treating as path", base_url.name)
+        _LOGGER.debug('Base URL is to file "%s", treating as path', base_url.name)
         base_url = base_url.with_path(f"{base_url.path}/")
     if not url.is_absolute():
         query = url.query
