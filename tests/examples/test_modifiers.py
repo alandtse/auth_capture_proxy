@@ -98,6 +98,7 @@ PROXY_URL_WITH_PATH_BACKSLASH = "https://www.proxy.com/oauth/path/"
 HOST_URL = "https://www.host.com"
 HOST_URL_BACKSLASH = "https://www.host.com/"
 HOST_URL_WITH_PATH = "https://www.host.com/auth/path/test?attr=asdf"
+HOST_URL_WITH_PATH_BACKSLASH = "https://www.host.com/auth/path/test/?attr=asdf"
 RELATIVE_URLS = ["asdf/asbklahef", "/root/asdf/b", "/root/asdf/b/", "asdf/asbklahef/", "asdf/"]
 ABSOLUTE_URLS = [
     PROXY_URL,
@@ -203,38 +204,41 @@ async def test_replace_empty_action_urls_empty():
 @pytest.mark.asyncio
 async def test_prepend_relative_urls():
     """Test prepend_relative_urls."""
-    start_url = random.choice(RELATIVE_URLS)  # nosec
-    for form in [
-        FORM,
-        FORM_WITH_DATA,
-        FORM_NO_NAME,
-        FORM_NO_ID,
-        build_random_html(url=start_url),
-        FORM_WITH_EMPTY_ACTION,
-        FORM_WITH_VERIFY_ACTION,
-    ]:
-        for url in [
-            HOST_URL,
-            HOST_URL_WITH_PATH,
-            PROXY_URL,
-            PROXY_URL_WITH_PATH,
-            HOST_URL_BACKSLASH,
+    for start_url in RELATIVE_URLS:
+        for form in [
+            FORM,
+            FORM_WITH_DATA,
+            FORM_NO_NAME,
+            FORM_NO_ID,
+            build_random_html(url=start_url),
+            FORM_WITH_EMPTY_ACTION,
+            FORM_WITH_VERIFY_ACTION,
         ]:
-            result = await modifiers.prepend_relative_urls(url, form)
-            old_soup = bs(form, "html.parser")
-            soup = bs(result, "html.parser")
-            for tag, attribute in KNOWN_URLS_ATTRS.items():
-                if old_soup.find(tag) and old_soup.find(tag).get(attribute) is not None:
-                    old_url = old_soup.find(tag).get(attribute)
-                    new_url = soup.find(tag).get(attribute)
-                    if URL(old_url).is_absolute():
-                        assert new_url != old_url
-                        assert start_url == old_url
-                    else:
-                        assert URL(new_url).is_absolute()
-                        assert new_url.startswith(str(URL(url).with_query({})))
-                        if old_url:
-                            assert new_url.endswith(old_url)
+            for url in [
+                HOST_URL,
+                HOST_URL_WITH_PATH,
+                PROXY_URL,
+                PROXY_URL_WITH_PATH,
+                HOST_URL_BACKSLASH,
+                HOST_URL_WITH_PATH_BACKSLASH,
+                PROXY_URL_WITH_PATH_BACKSLASH,
+            ]:
+                result = await modifiers.prepend_relative_urls(url, form)
+                old_soup = bs(form, "html.parser")
+                soup = bs(result, "html.parser")
+                for tag, attribute in KNOWN_URLS_ATTRS.items():
+                    if old_soup.find(tag) and old_soup.find(tag).get(attribute) is not None:
+                        old_url = old_soup.find(tag).get(attribute)
+                        new_url = soup.find(tag).get(attribute)
+                        if URL(old_url).is_absolute():
+                            assert new_url != old_url
+                            assert start_url == old_url
+                        else:
+                            assert URL(new_url).is_absolute()
+                            assert new_url.startswith(str(URL(url).parent))
+                            if old_url:
+                                assert new_url.endswith(old_url)
+                                assert URL(new_url).name in URL(old_url).name
 
 
 @pytest.mark.asyncio

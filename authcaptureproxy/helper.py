@@ -183,7 +183,7 @@ def prepend_url(base_url: URL, url: URL, encoded: bool = False) -> URL:
     """Prepend the url.
 
     Args:
-        base_url (URL): Base URL to prepend
+        base_url (URL): Base URL to prepend. The URL must end with a "/" so it's a folder or domain.
         url (URL): url to prepend
         encoded (bool): Whether to treat the url as already encoded. This may be needed if the url is JavaScript.
     """
@@ -191,11 +191,14 @@ def prepend_url(base_url: URL, url: URL, encoded: bool = False) -> URL:
         base_url = URL(base_url)
     if isinstance(url, str):
         url = URL(url)
+    if base_url.name:
+        _LOGGER.warn("Base URL is to file %s, treating as path", base_url.name)
+        base_url = base_url.with_path(f"{base_url.path}/")
     if not url.is_absolute():
         query = url.query
         path = url.path
         return base_url.with_path(
-            re.sub(r"/+", "/", f"{base_url.path}{path}"), encoded=encoded
+            re.sub(r"/+", "/", f"{base_url.path}/{path}"), encoded=encoded
         ).with_query(query)
     return url
 
