@@ -4,7 +4,7 @@ import asyncio
 import logging
 import re
 from functools import partial
-from ssl import SSLContext
+from ssl import SSLContext, create_default_context
 from typing import Any, Callable, Dict, List, Optional, Text, Tuple, Union
 
 import httpx
@@ -35,6 +35,9 @@ from authcaptureproxy.helper import (
 )
 from authcaptureproxy.stackoverflow import get_open_port
 
+# Pre-configure SSL context
+ssl_context = create_default_context()
+
 _LOGGER = logging.getLogger(__name__)
 
 
@@ -63,7 +66,7 @@ class AuthCaptureProxy:
         """
         self._preserve_headers = preserve_headers
         self.session_factory: Callable[[], httpx.AsyncClient] = session_factory or (
-            lambda: httpx.AsyncClient()
+            lambda: httpx.AsyncClient(verify=ssl_context)
         )
         self.session: httpx.AsyncClient = session if session else self.session_factory()
         self._proxy_url: URL = proxy_url
