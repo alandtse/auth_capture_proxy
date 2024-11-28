@@ -2,6 +2,12 @@
 
 <!--next-version-placeholder-->
 
+## v1.3.3 (2024-11-28)
+
+### Fix
+
+* Preconfigure SSL context ([`5159165`](https://github.com/alandtse/auth_capture_proxy/commit/5159165ed6088134dedc1bb1a950a6894fbc2465))
+
 ## v1.3.2 (2023-11-29)
 
 ### Fix

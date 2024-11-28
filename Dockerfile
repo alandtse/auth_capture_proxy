@@ -4,10 +4,10 @@ FROM python:3.9
 
 # See https://github.com/opencontainers/image-spec/blob/master/annotations.md
 LABEL name="auth_capture_proxy"
-LABEL version="1.3.2"
+LABEL version="1.3.3"
 LABEL vendor="alandtse"
 LABEL org.opencontainers.image.title="auth_capture_proxy"
-LABEL org.opencontainers.image.version="1.3.2"
+LABEL org.opencontainers.image.version="1.3.3"
 LABEL org.opencontainers.image.url="https://github.com/alandtse/auth_capture_proxy"
 LABEL org.opencontainers.image.documentation="https://github.com/alandtse/auth_capture_proxy"
 
