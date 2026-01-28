@@ -123,7 +123,6 @@ jobs:
             --verbose
             --no-progress
             --accept 200,206,429
-            --exclude-mail
             --timeout 20
             --max-concurrency 8
             "**/*.md"
