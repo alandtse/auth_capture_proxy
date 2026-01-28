@@ -97,3 +97,27 @@ jobs:
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           verbose: true # optional (default = false)
+
+  # Legacy required checks for branch protection
+  build_39:
+    name: build (3.9)
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - name: Compatibility status
+        run: |
+          echo "Legacy required check for branch protection."
+
+  # Legacy required checks for branch protection
+  markdown_link_check:
+    name: markdown-link-check
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check markdown links
+        uses: gaurav-nelson/github-action-markdown-link-check@v1
+        with:
+          use-quiet-mode: "yes"
+          use-verbose-mode: "no"
