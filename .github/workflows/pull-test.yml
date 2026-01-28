@@ -16,7 +16,6 @@ on:
 jobs:
   pr:
     # Pull requests: fast feedback on latest Python only
-    build:
     name: PR (Python 3.12)
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
