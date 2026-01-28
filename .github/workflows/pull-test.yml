@@ -98,7 +98,9 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
           verbose: true # optional (default = false)
 
-  # Legacy required checks for branch protection
+  # Legacy required check for branch protection.
+  # NOTE: This does NOT run Python 3.9 tests; it exists only because branch protection
+  # requires a status check named "build (3.9)". Remove once branch protection is updated.
   build_39:
     name: build (3.9)
     runs-on: ubuntu-latest
