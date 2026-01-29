@@ -3,6 +3,7 @@
 import asyncio
 import logging
 import re
+from datetime import timedelta
 from json import JSONDecodeError
 from functools import partial
 from ssl import SSLContext, create_default_context
@@ -37,6 +38,10 @@ from authcaptureproxy.stackoverflow import get_open_port
 # Pre-configure SSL context
 ssl_context = create_default_context()
 
+# Amazon login / verify flows can be slow; httpx defaults are often too short (~5s).
+# Use a more forgiving timeout for proxying browser-driven auth traffic.
+DEFAULT_HTTPX_TIMEOUT = httpx.Timeout(60.0)
+
 _LOGGER = logging.getLogger(__name__)
 
 
@@ -64,8 +69,10 @@ class AuthCaptureProxy:
         """
         self._preserve_headers = preserve_headers
         self.session_factory: Callable[[], httpx.AsyncClient] = session_factory or (
-            lambda: httpx.AsyncClient(verify=ssl_context)
-        )
+            lambda: httpx.AsyncClient(
+                verify=ssl_context,
+                timeout=DEFAULT_HTTPX_TIMEOUT,
+            )
         self.session: httpx.AsyncClient = session if session else self.session_factory()
         self._proxy_url: URL = proxy_url
         self._host_url: URL = host_url
