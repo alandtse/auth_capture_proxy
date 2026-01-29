@@ -92,6 +92,7 @@ class AuthCaptureProxy:
         self.redirect_filters: Dict[Text, List[Text]] = {
             "url": []
         }  # dictionary of lists of regex strings to filter against
+        self._background_tasks: set[asyncio.Task] = set()
 
     @property
     def active(self) -> bool:
@@ -396,15 +397,17 @@ class AuthCaptureProxy:
             self.data.update(json_data)
             _LOGGER.debug("Storing json %s", json_data)
         if URL(str(request.url)).path == re.sub(
-            r"/ +", "/", self._proxy_url.with_path(f"{self._proxy_url.path}/stop").path
+            r"/+", "/", self._proxy_url.with_path(f"{self._proxy_url.path}/stop").path
         ):
             self.all_handler_active = False
             if self.active:
-                asyncio.create_task(self.stop_proxy(3))
+                task = asyncio.create_task(self.stop_proxy(3))
+                self._background_tasks.add(task)
+                task.add_done_callback(self._background_tasks.discard)
             return await self._build_response(text="Proxy stopped.")
         elif (
             URL(str(request.url)).path
-            == re.sub(r"/ +", "/", self._proxy_url.with_path(f"{self._proxy_url.path}/resume").path)
+            == re.sub(r"/+", "/", self._proxy_url.with_path(f"{self._proxy_url.path}/resume").path)
             and self.last_resp
             and isinstance(self.last_resp, httpx.Response)
         ):
@@ -415,7 +418,7 @@ class AuthCaptureProxy:
             if URL(str(request.url)).path in [
                 self._proxy_url.path,
                 re.sub(
-                    r"/ +", "/", self._proxy_url.with_path(f"{self._proxy_url.path}/resume").path
+                    r"/+", "/", self._proxy_url.with_path(f"{self._proxy_url.path}/resume").path
                 ),
             ]:
                 # either base path or resume without anything to resume
