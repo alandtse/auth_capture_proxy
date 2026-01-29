@@ -72,6 +72,7 @@ class AuthCaptureProxy:
                 verify=ssl_context,
                 timeout=DEFAULT_HTTPX_TIMEOUT,
             )
+        )
         self.session: httpx.AsyncClient = session if session else self.session_factory()
         self._proxy_url: URL = proxy_url
         self._host_url: URL = host_url
