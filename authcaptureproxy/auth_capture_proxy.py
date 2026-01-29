@@ -3,6 +3,7 @@
 import asyncio
 import logging
 import re
+from json import JSONDecodeError
 from functools import partial
 from ssl import SSLContext, create_default_context
 from typing import Any, Callable, Dict, List, Optional, Text, Tuple, Union
@@ -382,8 +383,15 @@ class AuthCaptureProxy:
         else:
             data = convert_multidict_to_dict(await request.post())
         json_data = None
-        if request.has_body:
-            json_data = await request.json()
+        # Only attempt JSON decoding for JSON requests; avoid raising for form posts.
+        if request.has_body and (
+            request.content_type == "application/json"
+            or request.content_type.endswith("+json")
+        ):
+            try:
+                json_data = await request.json()
+            except (JSONDecodeError, ValueError):
+                json_data = None
         if data:
             self.data.update(data)
             _LOGGER.debug("Storing data %s", data)
@@ -426,33 +434,35 @@ class AuthCaptureProxy:
             if skip_auto_headers:
                 _LOGGER.debug("Discovered skip_auto_headers %s", skip_auto_headers)
                 headers.pop(SKIP_AUTO_HEADERS)
+            # Avoid accidental header mutation across branches/calls
+            req_headers: dict[str, Any] = dict(headers)
             _LOGGER.debug(
                 "Attempting %s to %s\nheaders: %s \ncookies: %s",
                 method,
                 site,
-                headers,
+                req_headers,
                 self.session.cookies.jar,
             )
             try:
                 if mpwriter:
                     resp = await getattr(self.session, method)(
-                        site, data=mpwriter, headers=headers, follow_redirects=True
+                        site, data=mpwriter, headers=req_headers, follow_redirects=True
                     )
                 elif data:
                     resp = await getattr(self.session, method)(
-                        site, data=data, headers=headers, follow_redirects=True
+                        site, data=data, headers=req_headers, follow_redirects=True
                     )
                 elif json_data:
                     for item in ["Host", "Origin", "User-Agent", "dnt", "Accept-Encoding"]:
                         # remove proxy headers
-                        if headers.get(item):
-                            headers.pop(item)
+                        if req_headers.get(item):
+                            req_headers.pop(item)
                     resp = await getattr(self.session, method)(
-                        site, json=json_data, headers=headers, follow_redirects=True
+                        site, json=json_data, headers=req_headers, follow_redirects=True
                     )
                 else:
                     resp = await getattr(self.session, method)(
-                        site, headers=headers, follow_redirects=True
+                        site, headers=req_headers, follow_redirects=True
                     )
             except ClientConnectionError as ex:
                 return await self._build_response(
