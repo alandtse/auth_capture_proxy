@@ -10,10 +10,8 @@ from typing import Any, Callable, Dict, List, Optional, Text, Tuple, Union
 
 import httpx
 from aiohttp import (
-    ClientConnectionError,
     MultipartReader,
     MultipartWriter,
-    TooManyRedirects,
     hdrs,
     web,
 )
@@ -48,8 +46,7 @@ class AuthCaptureProxy:
     This class relies on tests to be provided to indicate the proxy has completed. At proxy completion all data can be found in self.session, self.data, and self.query.
     """
 
-    def __init__(
-        self,
+    def __init__(self,
         proxy_url: URL,
         host_url: URL,
         session: Optional[httpx.AsyncClient] = None,
@@ -59,7 +56,7 @@ class AuthCaptureProxy:
         """Initialize proxy object.
 
         Args:
-            proxy_url (URL): url for proxy location. e.g., http://192.168.1.1/. If there is any path, the path is considered part of the base url. If no explicit port is specified, a random port will be generated. If https is passed in, ssl_context must be provided at start_proxy() or the url will be downgraded to http.
+            proxy_url (URL): url for proxy location. e.g., http://192.168.1.1/. If there is any path, the path is considered part of the base url. If no explicit port is specified, a random port w[...]  
             host_url (URL): original url for login, e.g., http://amazon.com
             session (httpx.AsyncClient): httpx client to make queries. Optional
             session_factory (lambda: httpx.AsyncClient): factory to create the aforementioned httpx client if having one fixed session is insufficient.
@@ -120,7 +117,7 @@ class AuthCaptureProxy:
     def tests(self) -> Dict[Text, Callable]:
         """Return tests setting.
 
-        :setter: value (Dict[Text, Any]): A dictionary of tests. The key should be the name of the test and the value should be a function or coroutine that takes a httpx.Response, a dictionary of post variables, and a dictioary of query variables and returns a URL or string. See :mod:`authcaptureproxy.examples.testers` for examples.
+        :setter: value (Dict[Text, Any]): A dictionary of tests. The key should be the name of the test and the value should be a function or coroutine that takes a httpx.Response, a dictionary o[...]  
         """
         return self._tests
 
@@ -139,7 +136,7 @@ class AuthCaptureProxy:
     def modifiers(self) -> Dict[Text, Union[Callable, Dict[Text, Callable]]]:
         """Return modifiers setting.
 
-        :setter: value (Dict[Text, Dict[Text, Callable]): A nested dictionary of modifiers. The key shoud be a MIME type and the value should be a dictionary of modifiers for that MIME type where the key should be the name of the modifier and the value should be a function or couroutine that takes a string and returns a modified string. If parameters are necessary, functools.partial should be used. See :mod:`authcaptureproxy.examples.modifiers` for examples.
+        :setter: value (Dict[Text, Dict[Text, Callable]): A nested dictionary of modifiers. The key shoud be a MIME type and the value should be a dictionary of modifiers for that MIME type where[...]  
         """
         return self._modifiers
 
@@ -277,7 +274,7 @@ class AuthCaptureProxy:
     async def all_handler(self, request: web.Request, **kwargs) -> web.Response:
         """Handle all requests.
 
-        This handler will exit on succesful test found in self.tests or if a /stop url is seen. This handler can be used with any aiohttp webserver and disabled after registered using self.all_handler_active.
+        This handler will exit on succesful test found in self.tests or if a /stop url is seen. This handler can be used with any aiohttp webserver and disabled after registered using self.all_ha[...]  
 
         Args
             request (web.Request): The request to process
@@ -317,7 +314,7 @@ class AuthCaptureProxy:
                     break
                 if isinstance(part, MultipartReader):
                     await _process_multipart(part, writer)
-                elif part.headers.get("hdrs.CONTENT_TYPE"):
+                elif hdrs.CONTENT_TYPE in part.headers:
                     if part.headers[hdrs.CONTENT_TYPE] == "application/json":
                         part_data: Optional[
                             Union[Text, Dict[Text, Any], List[Tuple[Text, Text]], bytes]
@@ -399,7 +396,7 @@ class AuthCaptureProxy:
             self.data.update(json_data)
             _LOGGER.debug("Storing json %s", json_data)
         if URL(str(request.url)).path == re.sub(
-            r"/+", "/", self._proxy_url.with_path(f"{self._proxy_url.path}/stop").path
+            r"/ +", "/", self._proxy_url.with_path(f"{self._proxy_url.path}/stop").path
         ):
             self.all_handler_active = False
             if self.active:
@@ -407,7 +404,7 @@ class AuthCaptureProxy:
             return await self._build_response(text="Proxy stopped.")
         elif (
             URL(str(request.url)).path
-            == re.sub(r"/+", "/", self._proxy_url.with_path(f"{self._proxy_url.path}/resume").path)
+            == re.sub(r"/ +", "/", self._proxy_url.with_path(f"{self._proxy_url.path}/resume").path)
             and self.last_resp
             and isinstance(self.last_resp, httpx.Response)
         ):
@@ -418,7 +415,7 @@ class AuthCaptureProxy:
             if URL(str(request.url)).path in [
                 self._proxy_url.path,
                 re.sub(
-                    r"/+", "/", self._proxy_url.with_path(f"{self._proxy_url.path}/resume").path
+                    r"/ +", "/", self._proxy_url.with_path(f"{self._proxy_url.path}/resume").path
                 ),
             ]:
                 # either base path or resume without anything to resume
@@ -464,18 +461,22 @@ class AuthCaptureProxy:
                     resp = await getattr(self.session, method)(
                         site, headers=req_headers, follow_redirects=True
                     )
-             except ClientConnectionError as ex:
-                 return await self._build_response(
-                     text=f"Error connecting to {site}; please retry: {ex}"
-                 )
+            except httpx.ConnectError as ex:
+                return await self._build_response(
+                    text=f"Error connecting to {site}; please retry: {ex}"
+                )
             except httpx.TimeoutException as ex:
                 return await self._build_response(
                     text=f"Error connecting to {site}; request timed out: {ex}"
                 )
-             except TooManyRedirects as ex:
-                 return await self._build_response(
-                     text=f"Error connecting to {site}; too may redirects: {ex}"
-                 )
+            except httpx.TooManyRedirects as ex:
+                return await self._build_response(
+                    text=f"Error connecting to {site}; too many redirects: {ex}"
+                )
+            except httpx.HTTPError as ex:
+                return await self._build_response(
+                    text=f"Error connecting to {site}: {ex}"
+                )
         if resp is None:
             return await self._build_response(text=f"Error connecting to {site}; please retry")
         self.last_resp = resp
@@ -613,8 +614,7 @@ class AuthCaptureProxy:
         """
         host_string: Text = str(self._host_url.with_path("/"))
         proxy_string: Text = str(
-            self.access_url() if not domain_only else self.access_url().with_path("/")
-        )
+            self.access_url() if not domain_only else self.access_url().with_path("/"))
         if str(self.access_url().with_path("/")).replace("https", "http") in text:
             _LOGGER.debug(
                 "Replacing %s with %s",
