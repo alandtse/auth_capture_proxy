@@ -464,14 +464,18 @@ class AuthCaptureProxy:
                     resp = await getattr(self.session, method)(
                         site, headers=req_headers, follow_redirects=True
                     )
-            except ClientConnectionError as ex:
+             except ClientConnectionError as ex:
+                 return await self._build_response(
+                     text=f"Error connecting to {site}; please retry: {ex}"
+                 )
+            except httpx.TimeoutException as ex:
                 return await self._build_response(
-                    text=f"Error connecting to {site}; please retry: {ex}"
+                    text=f"Error connecting to {site}; request timed out: {ex}"
                 )
-            except TooManyRedirects as ex:
-                return await self._build_response(
-                    text=f"Error connecting to {site}; too may redirects: {ex}"
-                )
+             except TooManyRedirects as ex:
+                 return await self._build_response(
+                     text=f"Error connecting to {site}; too may redirects: {ex}"
+                 )
         if resp is None:
             return await self._build_response(text=f"Error connecting to {site}; please retry")
         self.last_resp = resp
