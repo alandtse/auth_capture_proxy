@@ -3,7 +3,6 @@
 import asyncio
 import logging
 import re
-from datetime import timedelta
 from json import JSONDecodeError
 from functools import partial
 from ssl import SSLContext, create_default_context
