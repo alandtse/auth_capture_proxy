@@ -37,10 +37,6 @@ from authcaptureproxy.stackoverflow import get_open_port
 # Pre-configure SSL context
 ssl_context = create_default_context()
 
-# Amazon login / verify flows can be slow; httpx defaults are often too short (~5s).
-# Use a more forgiving timeout for proxying browser-driven auth traffic.
-DEFAULT_HTTPX_TIMEOUT = httpx.Timeout(60.0)
-
 _LOGGER = logging.getLogger(__name__)
 
 
