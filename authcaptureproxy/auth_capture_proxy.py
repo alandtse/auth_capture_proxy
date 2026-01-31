@@ -474,7 +474,7 @@ class AuthCaptureProxy:
                 _LOGGER.warning(
                     "Timeout during proxy request to %s: %s",
                     site,
-                    type(ex).__name__,
+                    ex.__class__.__name__,
                 )
                 return await self._build_response(
                     text=(
