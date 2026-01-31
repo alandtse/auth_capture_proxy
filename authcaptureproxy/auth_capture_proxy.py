@@ -328,15 +328,16 @@ class AuthCaptureProxy:
                     await _process_multipart(part, writer)
                 elif hdrs.CONTENT_TYPE in part.headers:
                     content_type = part.headers.get(hdrs.CONTENT_TYPE, "")
-                    if content_type.split(";", 1)[0].strip() == "application/json":
+                    mime_type = content_type.split(";", 1)[0].strip()
+                    if mime_type == "application/json":
                         part_data: Optional[
                             Union[Text, Dict[Text, Any], List[Tuple[Text, Text]], bytes]
                         ] = await part.json()
                         writer.append_json(part_data)
-                    elif part.headers[hdrs.CONTENT_TYPE].startswith("text"):
+                    elif mime_type.startswith("text"):
                         part_data = await part.text()
                         writer.append(part_data)
-                    elif part.headers[hdrs.CONTENT_TYPE] == "application/www-urlform-encode":
+                    elif mime_type == "application/x-www-form-urlencoded":
                         part_data = await part.form()
                         writer.append_form(part_data)
                     else:
