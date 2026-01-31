@@ -485,10 +485,6 @@ class AuthCaptureProxy:
                 return await self._build_response(
                     text=f"Error connecting to {site}; too many redirects: {ex}"
                 )
-            except httpx.HTTPError as ex:
-                return await self._build_response(
-                    text=f"Error connecting to {site}: {ex}"
-                )
             except httpx.TimeoutException as ex:
                 _LOGGER.warning(
                     "Timeout during proxy request to %s: %s",
@@ -502,6 +498,10 @@ class AuthCaptureProxy:
                         "Please retry, or check DNS resolution, firewall rules, proxy/VPN settings, "
                         "and that the service endpoint is reachable from this host."
                     )
+                )
+            except httpx.HTTPError as ex:
+                return await self._build_response(
+                    text=f"Error connecting to {site}: {ex}"
                 )
         if resp is None:
             return await self._build_response(text=f"Error connecting to {site}; please retry")
