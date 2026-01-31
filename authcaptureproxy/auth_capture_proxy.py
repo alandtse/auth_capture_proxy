@@ -70,7 +70,12 @@ class AuthCaptureProxy:
         self.session_factory: Callable[[], httpx.AsyncClient] = session_factory or (
             lambda: httpx.AsyncClient(
                 verify=ssl_context,
-                timeout=DEFAULT_HTTPX_TIMEOUT,
+                timeout=httpx.Timeout(
+                    connect=10.0,
+                    read=30.0,
+                    write=10.0,
+                    pool=10.0,
+                ),
             )
         )
         self.session: httpx.AsyncClient = session if session else self.session_factory()
@@ -486,6 +491,20 @@ class AuthCaptureProxy:
             except httpx.HTTPError as ex:
                 return await self._build_response(
                     text=f"Error connecting to {site}: {ex}"
+                )
+            except httpx.TimeoutException as ex:
+                _LOGGER.warning(
+                    "Timeout during proxy request to %s: %s",
+                    site,
+                    ex.__class__.__name__,
+                )
+                return await self._build_response(
+                    text=(
+                        "Timed out while contacting the service during login.\n\n"
+                        "This is usually caused by slow or blocked network access. "
+                        "Please retry, or check DNS resolution, firewall rules, proxy/VPN settings, "
+                        "and that the service endpoint is reachable from this host."
+                    )
                 )
         if resp is None:
             return await self._build_response(text=f"Error connecting to {site}; please retry")
