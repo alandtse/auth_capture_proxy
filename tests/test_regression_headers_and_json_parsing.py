@@ -45,7 +45,7 @@ async def _make_request(
     body: bytes = b"",
 ):
     """
-    Build a mocked aiohttp Request with a real StreamReader payload so
+    Build a mocked aiohttp Request with a real StreamReader payload.
     Request.has_body works (it calls request._payload.at_eof()).
 
     CI uses aiohttp 3.9.x where StreamReader requires a `limit` argument.
@@ -73,7 +73,7 @@ async def _make_request(
 @pytest.fixture
 def proxy(monkeypatch):
     """
-    Regression note:
+    Regression note.
 
     These tests cover cross-request header contamination caused by in-place mutation
     of the headers mapping inside AuthCaptureProxy.all_handler().
