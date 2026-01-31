@@ -1,6 +1,9 @@
+import asyncio
+
 import pytest
 import httpx
 
+from aiohttp.streams import StreamReader
 from aiohttp.test_utils import make_mocked_request
 from multidict import CIMultiDict
 from yarl import URL
@@ -33,15 +36,30 @@ class DummyAsyncClient:
         )
 
 
-def _make_request(
-    *, method: str, path: str, content_type: str, headers=None, body: bytes = b""
+async def _make_request(
+    *,
+    method: str,
+    path: str,
+    content_type: str,
+    headers=None,
+    body: bytes = b"",
 ):
+    """
+    Build a mocked aiohttp Request with a real StreamReader payload so
+    Request.has_body works (it calls request._payload.at_eof()).
+    """
     hdrs = CIMultiDict(headers or {})
     hdrs["Content-Type"] = content_type
-    # make it explicit that there is a body when provided
+    hdrs.setdefault("Content-Length", str(len(body)))
+
+    # StreamReader requires a running loop
+    loop = asyncio.get_running_loop()
+    payload = StreamReader(protocol=None, loop=loop)  # type: ignore[arg-type]
     if body:
-        hdrs.setdefault("Content-Length", str(len(body)))
-    return make_mocked_request(method, path, headers=hdrs, payload=body)
+        payload.feed_data(body)
+    payload.feed_eof()
+
+    return make_mocked_request(method, path, headers=hdrs, payload=payload)
 
 
 @pytest.fixture
@@ -101,14 +119,8 @@ def proxy(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_cross_request_header_contamination_across_json_posts(proxy):
-    """
-    Fails before fix: JSON branch pops headers from shared_headers in-place;
-    next request starts from an already-mutated header set.
-
-    Passes after fix: JSON branch only mutates a copy; shared_headers remains unchanged.
-    """
     # JSON request #1
-    req1 = _make_request(
+    req1 = await _make_request(
         method="POST",
         path="/login",
         content_type="application/json",
@@ -119,7 +131,6 @@ async def test_cross_request_header_contamination_across_json_posts(proxy):
         return {"a": 1}
 
     req1.json = _json1  # type: ignore[attr-defined]
-
     await proxy.all_handler(req1)
 
     # Shared dict must remain intact after request #1 (core regression assertion)
@@ -132,7 +143,7 @@ async def test_cross_request_header_contamination_across_json_posts(proxy):
     assert shared["X-Custom"] == "keep"
 
     # JSON request #2
-    req2 = _make_request(
+    req2 = await _make_request(
         method="POST",
         path="/login",
         content_type="application/json",
@@ -143,7 +154,6 @@ async def test_cross_request_header_contamination_across_json_posts(proxy):
         return {"b": 2}
 
     req2.json = _json2  # type: ignore[attr-defined]
-
     await proxy.all_handler(req2)
 
     # Both outbound requests must have proxy headers stripped
@@ -161,11 +171,8 @@ async def test_cross_request_header_contamination_across_json_posts(proxy):
 
 @pytest.mark.asyncio
 async def test_cross_request_header_contamination_between_request_types(proxy):
-    """
-    JSON request must not poison later non-JSON requests by mutating shared headers.
-    """
     # First JSON request
-    req_json = _make_request(
+    req_json = await _make_request(
         method="POST",
         path="/login",
         content_type="application/json",
@@ -179,7 +186,7 @@ async def test_cross_request_header_contamination_between_request_types(proxy):
     await proxy.all_handler(req_json)
 
     # Then a form post; provide post() to keep it on the form path.
-    req_form = _make_request(
+    req_form = await _make_request(
         method="POST",
         path="/login",
         content_type="application/x-www-form-urlencoded",
@@ -199,11 +206,7 @@ async def test_cross_request_header_contamination_between_request_types(proxy):
 
 @pytest.mark.asyncio
 async def test_json_parsing_guards_on_non_json_content(proxy):
-    """
-    Fails before fix: if handler calls request.json() on a form request, this raises.
-    Passes after fix: request.json() is only called for JSON content-types.
-    """
-    req_form = _make_request(
+    req_form = await _make_request(
         method="POST",
         path="/login",
         content_type="application/x-www-form-urlencoded",
@@ -224,7 +227,7 @@ async def test_json_parsing_guards_on_non_json_content(proxy):
 
 @pytest.mark.asyncio
 async def test_json_parsing_for_json_content_types(proxy):
-    req_json = _make_request(
+    req_json = await _make_request(
         method="POST",
         path="/login",
         content_type="application/json",
@@ -237,14 +240,13 @@ async def test_json_parsing_for_json_content_types(proxy):
         return {"ok": True}
 
     req_json.json = _json  # type: ignore[attr-defined]
-
     await proxy.all_handler(req_json)
     assert called["count"] == 1
 
 
 @pytest.mark.asyncio
 async def test_json_parsing_for_json_plus_suffix_content_types(proxy):
-    req_json = _make_request(
+    req_json = await _make_request(
         method="POST",
         path="/login",
         content_type="application/vnd.api+json",
@@ -257,6 +259,5 @@ async def test_json_parsing_for_json_plus_suffix_content_types(proxy):
         return {"v": 1}
 
     req_json.json = _json  # type: ignore[attr-defined]
-
     await proxy.all_handler(req_json)
     assert called["count"] == 1
