@@ -6,7 +6,7 @@ import re
 from json import JSONDecodeError
 from functools import partial
 from ssl import SSLContext, create_default_context
-from typing import Any, Callable, Dict, List, Optional, Text, Tuple, Union
+from typing import Any, Callable, Dict, List, Optional, Set, Text, Tuple, Union
 
 import httpx
 from aiohttp import (
@@ -103,7 +103,7 @@ class AuthCaptureProxy:
         self.redirect_filters: Dict[Text, List[Text]] = {
             "url": []
         }  # dictionary of lists of regex strings to filter against
-        self._background_tasks: set[asyncio.Task] = set()
+        self._background_tasks: Set[asyncio.Task] = set()
 
     @property
     def active(self) -> bool:
