@@ -7,7 +7,7 @@ on:
       - main
 jobs:
   build:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     strategy:
       max-parallel: 1
       matrix:
@@ -15,12 +15,12 @@ jobs:
           - "3.10"
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
       - name: Set up Python
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v5
         with:
           python-version: "3.10"
       - name: Install build meta-dependencies
@@ -36,16 +36,17 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_REPO_TOKEN }}
-      - uses: codecov/codecov-action@v1
+      - uses: codecov/codecov-action@v4
         with:
           verbose: true # optional (default = false)
+          token: ${{ secrets.CODECOV_TOKEN }}
   release:
     needs: build
     # https://github.community/t/how-do-i-specify-job-dependency-running-in-another-workflow/16482
     if: github.event_name == 'push' && github.ref == 'refs/heads/main' && !contains(github.event.head_commit.message, 'chore(release):')
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/setup-python@v2
+      - uses: actions/setup-python@v5
         with:
           python-version: "3.10"
       - name: Checkout code
@@ -58,7 +59,8 @@ jobs:
           git config --global user.name "semantic-release"
           git config --global user.email "semantic-release@GitHub"
       - name: Python Semantic Release
-        uses: relekang/python-semantic-release@v7.34.6
+        uses: python-semantic-release/python-semantic-release@v9.12.0
         with:
           github_token: ${{ secrets.GH_TOKEN }}
+        env:
           PYPI_TOKEN: ${{ secrets.PYPI_TOKEN }}
