@@ -56,7 +56,10 @@ class AuthCaptureProxy:
         """Initialize proxy object.
 
         Args:
-            proxy_url (URL): url for proxy location. e.g., http://192.168.1.1/. If there is any path, the path is considered part of the base url. If no explicit port is specified, a random port w[...]  
+            proxy_url (URL): url for proxy location. e.g., http://192.168.1.1/.
+                If there is any path, the path is considered part of the base url.
+                If no explicit port is specified, a random port will be generated.
+                If https is passed in, ssl_context must be provided at start_proxy() or the url will be downgraded to http.
             host_url (URL): original url for login, e.g., http://amazon.com
             session (httpx.AsyncClient): httpx client to make queries. Optional
             session_factory (lambda: httpx.AsyncClient): factory to create the aforementioned httpx client if having one fixed session is insufficient.
@@ -324,7 +327,8 @@ class AuthCaptureProxy:
                 if isinstance(part, MultipartReader):
                     await _process_multipart(part, writer)
                 elif hdrs.CONTENT_TYPE in part.headers:
-                    if part.headers[hdrs.CONTENT_TYPE] == "application/json":
+                    content_type = part.headers.get(hdrs.CONTENT_TYPE, "")
+                    if content_type.split(";", 1)[0].strip() == "application/json":
                         part_data: Optional[
                             Union[Text, Dict[Text, Any], List[Tuple[Text, Text]], bytes]
                         ] = await part.json()
@@ -475,10 +479,6 @@ class AuthCaptureProxy:
             except httpx.ConnectError as ex:
                 return await self._build_response(
                     text=f"Error connecting to {site}; please retry: {ex}"
-                )
-            except httpx.TimeoutException as ex:
-                return await self._build_response(
-                    text=f"Error connecting to {site}; request timed out: {ex}"
                 )
             except httpx.TooManyRedirects as ex:
                 return await self._build_response(
