@@ -148,7 +148,7 @@ class AuthCaptureProxy:
     def modifiers(self) -> Dict[Text, Union[Callable, Dict[Text, Callable]]]:
         """Return modifiers setting.
 
-        :setter: value (Dict[Text, Dict[Text, Callable]): A nested dictionary of modifiers. The key shoud be a MIME type and the value should be a dictionary of modifiers for that MIME type where the key should be the name of the modifier and the value should be a function or couroutine that takes a string and returns a modified string. If parameters are necessary, functools.partial should be used. See :mod:`authcaptureproxy.examples.modifiers` for examples.
+        :setter: value (Dict[Text, Dict[Text, Callable]): A nested dictionary of modifiers. The key should be a MIME type and the value should be a dictionary of modifiers for that MIME type where the key should be the name of the modifier and the value should be a function or coroutine that takes a string and returns a modified string. If parameters are necessary, functools.partial should be used. See :mod:`authcaptureproxy.examples.modifiers` for examples.
         """
         return self._modifiers
 
@@ -330,10 +330,19 @@ class AuthCaptureProxy:
                     content_type = part.headers.get(hdrs.CONTENT_TYPE, "")
                     mime_type = content_type.split(";", 1)[0].strip()
                     if mime_type == "application/json":
-                        part_data: Optional[
-                            Union[Text, Dict[Text, Any], List[Tuple[Text, Text]], bytes]
-                        ] = await part.json()
-                        writer.append_json(part_data)
+                        try:
+                            part_data: Optional[
+                                Union[Text, Dict[Text, Any], List[Tuple[Text, Text]], bytes]
+                            ] = await part.json()
+                            writer.append_json(part_data)
+                        except Exception:
+                            # Best-effort fallback: text, then bytes
+                            try:
+                                part_text = await part.text()
+                                writer.append(part_text)
+                            except Exception:
+                                part_data = await part.read()
+                                writer.append(part_data)
                     elif mime_type.startswith("text"):
                         part_data = await part.text()
                         writer.append(part_data)
