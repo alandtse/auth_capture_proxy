@@ -35,8 +35,8 @@ from authcaptureproxy.helper import (
 )
 from authcaptureproxy.stackoverflow import get_open_port
 
-# Pre-configure SSL context
-ssl_context = create_default_context()
+# Pre-configure SSL con
+ssl_con = create_default_con()
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -58,7 +58,7 @@ class AuthCaptureProxy:
         """Initialize proxy object.
 
         Args:
-            proxy_url (URL): url for proxy location. e.g., http://192.168.1.1/. If there is any path, the path is considered part of the base url. If no explicit port is specified, a random port will be generated. If https is passed in, ssl_context must be provided at start_proxy() or the url will be downgraded to http.
+            proxy_url (URL): url for proxy location. e.g., http://192.168.1.1/. If there is any path, the path is considered part of the base url. If no explicit port is specified, a random port will be generated. If https is passed in, ssl_con must be provided at start_proxy() or the url will be downgraded to http.
             host_url (URL): original url for login, e.g., http://amazon.com
             session (httpx.AsyncClient): httpx client to make queries. Optional
             session_factory (lambda: httpx.AsyncClient): factory to create the aforementioned httpx client if having one fixed session is insufficient.
@@ -67,7 +67,7 @@ class AuthCaptureProxy:
         self._preserve_headers = preserve_headers
         self.session_factory: Callable[[], httpx.AsyncClient] = session_factory or (
             lambda: httpx.AsyncClient(
-                verify=ssl_context,
+                verify=ssl_con,
                 timeout=httpx.Timeout(
                     connect=10.0,
                     read=30.0,
@@ -82,24 +82,24 @@ class AuthCaptureProxy:
         self._port: int = proxy_url.explicit_port if proxy_url.explicit_port else 0  # type: ignore
         self.runner: Optional[web.AppRunner] = None
         self.last_resp: Optional[httpx.Response] = None
-        self.init_query: Dict[Text, Any] = {}
-        self.query: Dict[Text, Any] = {}
-        self.data: Dict[Text, Any] = {}
+        self.init_query: Dict[, Any] = {}
+        self.query: Dict[, Any] = {}
+        self.data: Dict[, Any] = {}
         # tests and modifiers should be initialized after port is actually assigned and not during init.
         # however, to ensure defaults go first, they should have a dummy key set
-        self._tests: Dict[Text, Callable] = {}
-        self._modifiers: Dict[Text, Union[Callable, Dict[Text, Callable]]] = {
-            "text/html": {
+        self._tests: Dict[, Callable] = {}
+        self._modifiers: Dict[, Union[Callable, Dict[, Callable]]] = {
+            "/html": {
                 "prepend_relative_urls": lambda x: x,
                 "change_host_to_proxy": lambda x: x,
             }
         }
-        self._old_tests: Dict[Text, Callable] = {}
-        self._old_modifiers: Dict[Text, Union[Callable, Dict[Text, Callable]]] = {}
+        self._old_tests: Dict[, Callable] = {}
+        self._old_modifiers: Dict[, Union[Callable, Dict[, Callable]]] = {}
         self._active = False
         self._all_handler_active = True
-        self.headers: Dict[Text, Text] = {}
-        self.redirect_filters: Dict[Text, List[Text]] = {
+        self.headers: Dict[, ] = {}
+        self.redirect_filters: Dict[, List[]] = {
             "url": []
         }  # dictionary of lists of regex strings to filter against
 
@@ -124,38 +124,38 @@ class AuthCaptureProxy:
         return self._port
 
     @property
-    def tests(self) -> Dict[Text, Callable]:
+    def tests(self) -> Dict[, Callable]:
         """Return tests setting.
 
-        :setter: value (Dict[Text, Any]): A dictionary of tests. The key should be the name of the test and the value should be a function or coroutine that takes a httpx.Response, a dictionary of post variables, and a dictioary of query variables and returns a URL or string. See :mod:`authcaptureproxy.examples.testers` for examples.
+        :setter: value (Dict[, Any]): A dictionary of tests. The key should be the name of the test and the value should be a function or coroutine that takes a httpx.Response, a dictionary of post variables, and a dictioary of query variables and returns a URL or string. See :mod:`authcaptureproxy.examples.testers` for examples.
         """
         return self._tests
 
     @tests.setter
-    def tests(self, value: Dict[Text, Callable]) -> None:
+    def tests(self, value: Dict[, Callable]) -> None:
         """Set tests.
 
         Args:
-            value (Dict[Text, Any]): A dictionary of tests.
+            value (Dict[, Any]): A dictionary of tests.
         """
         self.refresh_tests()  # refresh in case of pending change
         self._old_tests = self._tests.copy()
         self._tests = value
 
     @property
-    def modifiers(self) -> Dict[Text, Union[Callable, Dict[Text, Callable]]]:
+    def modifiers(self) -> Dict[, Union[Callable, Dict[, Callable]]]:
         """Return modifiers setting.
 
-        :setter: value (Dict[Text, Dict[Text, Callable]): A nested dictionary of modifiers. The key shoud be a MIME type and the value should be a dictionary of modifiers for that MIME type where the key should be the name of the modifier and the value should be a function or couroutine that takes a string and returns a modified string. If parameters are necessary, functools.partial should be used. See :mod:`authcaptureproxy.examples.modifiers` for examples.
+        :setter: value (Dict[, Dict[, Callable]): A nested dictionary of modifiers. The key shoud be a MIME type and the value should be a dictionary of modifiers for that MIME type where the key should be the name of the modifier and the value should be a function or couroutine that takes a string and returns a modified string. If parameters are necessary, functools.partial should be used. See :mod:`authcaptureproxy.examples.modifiers` for examples.
         """
         return self._modifiers
 
     @modifiers.setter
-    def modifiers(self, value: Dict[Text, Union[Callable, Dict[Text, Callable]]]) -> None:
+    def modifiers(self, value: Dict[, Union[Callable, Dict[, Callable]]]) -> None:
         """Set tests.
 
         Args:
-            value (Dict[Text, Any]): A dictionary of tests.
+            value (Dict[, Any]): A dictionary of tests.
         """
         self.refresh_modifiers()  # refresh in case of pending change
         self._old_modifiers = self._modifiers
@@ -221,9 +221,9 @@ class AuthCaptureProxy:
             ),
         }
         if self._modifiers != self._old_modifiers:
-            if self.modifiers.get("text/html") is None:
-                self.modifiers["text/html"] = DEFAULT_MODIFIERS  # type: ignore
-            elif self.modifiers.get("text/html") and isinstance(self.modifiers["text/html"], dict):
+            if self.modifiers.get("/html") is None:
+                self.modifiers["/html"] = DEFAULT_MODIFIERS  # type: ignore
+            elif self.modifiers.get("/html") and isinstance(self.modifiers["/html"], dict):
                 self.modifiers["text/html"].update(DEFAULT_MODIFIERS)
             if site and isinstance(self.modifiers["text/html"], dict):
                 self.modifiers["text/html"].update(
@@ -478,10 +478,10 @@ class AuthCaptureProxy:
                 )
                 return await self._build_response(
                     text=(
-                        "Timed out while contacting Amazon during login.\n\n"
-                        "This is usually caused by slow or blocked network access from "
-                        "Home Assistant to Amazon. Please retry, or check DNS / firewall / "
-                        "IPv6 settings."
+                        "Timed out while contacting the service during login.\n\n"
+                        "This is usually caused by slow or blocked network access. "
+                        "Please retry, or check DNS resolution, firewall rules, proxy/VPN settings, "
+                        "and that the service endpoint is reachable from this host."
                     )
                 )
         if resp is None:
