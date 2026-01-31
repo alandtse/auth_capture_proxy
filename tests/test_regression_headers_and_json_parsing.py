@@ -47,14 +47,22 @@ async def _make_request(
     """
     Build a mocked aiohttp Request with a real StreamReader payload so
     Request.has_body works (it calls request._payload.at_eof()).
+
+    CI uses aiohttp 3.9.x where StreamReader requires a `limit` argument.
     """
     hdrs = CIMultiDict(headers or {})
     hdrs["Content-Type"] = content_type
     hdrs.setdefault("Content-Length", str(len(body)))
 
-    # StreamReader requires a running loop
     loop = asyncio.get_running_loop()
-    payload = StreamReader(protocol=None, loop=loop)  # type: ignore[arg-type]
+
+    # aiohttp 3.9: StreamReader(protocol, limit, loop)
+    # newer aiohttp: signature varies; keep this compatible.
+    try:
+        payload = StreamReader(None, 2**16, loop=loop)  # type: ignore[arg-type]
+    except TypeError:
+        payload = StreamReader(protocol=None, limit=2**16, loop=loop)  # type: ignore[arg-type]
+
     if body:
         payload.feed_data(body)
     payload.feed_eof()
