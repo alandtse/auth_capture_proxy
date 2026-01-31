@@ -129,7 +129,7 @@ class AuthCaptureProxy:
     def tests(self) -> Dict[Text, Callable]:
         """Return tests setting.
 
-        :setter: value (Dict[Text, Any]): A dictionary of tests. The key should be the name of the test and the value should be a function or coroutine that takes a httpx.Response, a dictionary oof post variables, and a dictioary of query variables and returns a URL or string. See :mod:`authcaptureproxy.examples.testers` for examples.
+        :setter: value (Dict[Text, Any]): A dictionary of tests. The key should be the name of the test and the value should be a function or coroutine that takes a httpx.Response, a dictionary of post variables, and a dictioary of query variables and returns a URL or string. See :mod:`authcaptureproxy.examples.testers` for examples.
         """
         return self._tests
 
@@ -286,7 +286,7 @@ class AuthCaptureProxy:
     async def all_handler(self, request: web.Request, **kwargs) -> web.Response:
         """Handle all requests.
 
-        This handler will exit on succesful test found in self.tests or if a /stop url is seen. This handler can be used with any aiohttp webserver and disabled after registered using self.all_haandler_active.
+        This handler will exit on successful test found in self.tests or if a /stop url is seen. This handler can be used with any aiohttp webserver and disabled after registered using self.all_haandler_active.
 
         Args
             request (web.Request): The request to process
