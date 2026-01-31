@@ -1,5 +1,6 @@
 import asyncio
 
+from typing import Any
 import pytest
 import httpx
 
@@ -13,7 +14,7 @@ class DummyAsyncClient:
     """Capture outbound requests without real network I/O."""
 
     def __init__(self) -> None:
-        self.calls = []
+        self.calls: list[dict[str, Any]] = []
         # match attribute access used in logging
         self.cookies = type("Cookies", (), {"jar": {}})()
 
