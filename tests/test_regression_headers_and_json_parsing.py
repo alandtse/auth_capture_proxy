@@ -38,6 +38,9 @@ def _make_request(
 ):
     hdrs = CIMultiDict(headers or {})
     hdrs["Content-Type"] = content_type
+    # make it explicit that there is a body when provided
+    if body:
+        hdrs.setdefault("Content-Length", str(len(body)))
     return make_mocked_request(method, path, headers=hdrs, payload=body)
 
 
@@ -116,7 +119,6 @@ async def test_cross_request_header_contamination_across_json_posts(proxy):
         return {"a": 1}
 
     req1.json = _json1  # type: ignore[attr-defined]
-    req1.has_body = True  # type: ignore[attr-defined]
 
     await proxy.all_handler(req1)
 
@@ -141,7 +143,6 @@ async def test_cross_request_header_contamination_across_json_posts(proxy):
         return {"b": 2}
 
     req2.json = _json2  # type: ignore[attr-defined]
-    req2.has_body = True  # type: ignore[attr-defined]
 
     await proxy.all_handler(req2)
 
@@ -175,7 +176,6 @@ async def test_cross_request_header_contamination_between_request_types(proxy):
         return {"a": 1}
 
     req_json.json = _json  # type: ignore[attr-defined]
-    req_json.has_body = True  # type: ignore[attr-defined]
     await proxy.all_handler(req_json)
 
     # Then a form post; provide post() to keep it on the form path.
@@ -190,7 +190,6 @@ async def test_cross_request_header_contamination_between_request_types(proxy):
         return {"field": "value"}
 
     req_form.post = _post  # type: ignore[attr-defined]
-    req_form.has_body = True  # type: ignore[attr-defined]
     await proxy.all_handler(req_form)
 
     form_out = proxy.session.calls[-1]["headers"]  # type: ignore[attr-defined]
@@ -219,7 +218,6 @@ async def test_json_parsing_guards_on_non_json_content(proxy):
 
     req_form.json = _json_raises  # type: ignore[attr-defined]
     req_form.post = _post  # type: ignore[attr-defined]
-    req_form.has_body = True  # type: ignore[attr-defined]
 
     await proxy.all_handler(req_form)
 
@@ -239,7 +237,6 @@ async def test_json_parsing_for_json_content_types(proxy):
         return {"ok": True}
 
     req_json.json = _json  # type: ignore[attr-defined]
-    req_json.has_body = True  # type: ignore[attr-defined]
 
     await proxy.all_handler(req_json)
     assert called["count"] == 1
@@ -260,7 +257,6 @@ async def test_json_parsing_for_json_plus_suffix_content_types(proxy):
         return {"v": 1}
 
     req_json.json = _json  # type: ignore[attr-defined]
-    req_json.has_body = True  # type: ignore[attr-defined]
 
     await proxy.all_handler(req_json)
     assert called["count"] == 1
