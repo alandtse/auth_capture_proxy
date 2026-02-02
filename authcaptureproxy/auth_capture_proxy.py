@@ -242,7 +242,7 @@ class AuthCaptureProxy:
         _skip_headers = {
             "content-type", "content-length", "content-encoding",
             "transfer-encoding", "connection",
-            "x-connection-hash", "set-cookie",
+            "x-connection-hash",
             "content-security-policy",
             "content-security-policy-report-only",
         }
@@ -400,11 +400,14 @@ class AuthCaptureProxy:
                 return await self._build_response(
                     text="Invalid multi-host AJAX path",
                 )
-            _allowed_host_patterns = (
-                r'\.(amazon\.(com|it|co\.uk|de|fr|es|co\.jp|ca|com\.au|in|com\.br)'
+            # Derive allowed hosts from the proxy target domain instead
+            # of a hardcoded region list, to support all Amazon regions.
+            _root_host = re.sub(r"^www\.", "", str(self._host_url.host or ""))
+            _allowed_host_pattern = (
+                rf'(^|\.)({re.escape(_root_host)}'
                 r'|awswaf\.com|amazoncognito\.com|ssl-images-amazon\.com)$'
             )
-            if not re.search(_allowed_host_patterns, _alt_host):
+            if not re.search(_allowed_host_pattern, _alt_host):
                 _LOGGER.warning(
                     "Blocked request to non-Amazon host via __amzn_host__: %s",
                     _alt_host,
@@ -516,8 +519,19 @@ class AuthCaptureProxy:
                     data.get("cvf_captcha_captcha_action", ""),
                     "present" if data.get("clientSideContext") else "absent",
                 )
-                # If aamation token looks valid (base64 JSON), keep it
-                if _aam_token and _aam_token.startswith("eyJ"):
+                # Validate aamation token by attempting base64 decode + JSON parse
+                _aam_token_valid = False
+                if _aam_token:
+                    try:
+                        import base64
+                        import json as _json
+                        _padded = _aam_token + "=" * (-len(_aam_token) % 4)
+                        _decoded_token = base64.urlsafe_b64decode(_padded)
+                        _json.loads(_decoded_token)
+                        _aam_token_valid = True
+                    except (ValueError, Exception):
+                        pass
+                if _aam_token_valid:
                     _LOGGER.debug(
                         "CVF verify: valid aamation token detected, "
                         "forwarding as-is with %d fields",
@@ -686,12 +700,16 @@ class AuthCaptureProxy:
         else:
             _LOGGER.warning("Proxy has no tests; please set.")
         content_type = get_content_type(resp)
-        # Detect AJAX requests: browser navigation includes
-        # "Upgrade-Insecure-Requests: 1" while XHR/fetch does not.
-        # AJAX HTML responses must NOT be processed by modifiers
-        # (URL rewriting, autofill) because that corrupts the content
-        # expected by the calling JavaScript (e.g., aamation challenge).
-        _is_ajax = request.headers.get("Upgrade-Insecure-Requests") != "1"
+        # Detect AJAX requests using Fetch Metadata headers (W3C standard).
+        # Sec-Fetch-Mode is set by the browser and cannot be spoofed by JS.
+        # 'navigate' = top-level page navigation; anything else = AJAX/subresource.
+        # Fall back to Upgrade-Insecure-Requests for older clients.
+        _sec_fetch_mode = request.headers.get("Sec-Fetch-Mode")
+        if _sec_fetch_mode is not None:
+            _is_ajax = _sec_fetch_mode != "navigate"
+        else:
+            # Legacy fallback for clients without Sec-Fetch-Mode
+            _is_ajax = request.headers.get("Upgrade-Insecure-Requests") != "1"
         if _is_ajax:
             _LOGGER.debug(
                 "AJAX response for %s: status=%s, content_type=%s",
