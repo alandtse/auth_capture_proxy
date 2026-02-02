@@ -19,6 +19,7 @@ from multidict import CIMultiDict
 from yarl import URL
 
 from authcaptureproxy.const import SKIP_AUTO_HEADERS
+from authcaptureproxy.interceptor import BaseInterceptor, InterceptContext
 from authcaptureproxy.examples.modifiers import (
     prepend_relative_urls,
     replace_empty_action_urls,
@@ -96,6 +97,24 @@ class AuthCaptureProxy:
             "url": []
         }  # dictionary of lists of regex strings to filter against
         self._background_tasks: Set[asyncio.Task] = set()
+        self._interceptors: List[BaseInterceptor] = []
+
+    @property
+    def interceptors(self) -> List[BaseInterceptor]:
+        """Return interceptors list.
+
+        :setter: value (List[BaseInterceptor]): A list of interceptors to run during request processing. See :mod:`authcaptureproxy.examples.amazon_waf` for an example.
+        """
+        return self._interceptors
+
+    @interceptors.setter
+    def interceptors(self, value: List[BaseInterceptor]) -> None:
+        """Set interceptors.
+
+        Args:
+            value (List[BaseInterceptor]): A list of interceptors.
+        """
+        self._interceptors = value
 
     @property
     def active(self) -> bool:
@@ -297,6 +316,9 @@ class AuthCaptureProxy:
 
         This handler will exit on successful test found in self.tests or if a /stop url is seen. This handler can be used with any aiohttp webserver and disabled after registered using self.all_haandler_active.
 
+        The handler supports an interceptor pipeline for extending behavior
+        without modifying core proxy code. See :class:`BaseInterceptor`.
+
         Args
             request (web.Request): The request to process
             **kwargs: Additional keyword arguments
@@ -373,64 +395,35 @@ class AuthCaptureProxy:
         if not self.all_handler_active:
             _LOGGER.debug("%s all_handler is disabled; returning 404.", self)
             raise web.HTTPNotFound()
-        # if not self.session:
-        #     self.session = httpx.AsyncClient()
         method = request.method.lower()
         _LOGGER.debug("Received %s: %s for %s", method, str(request.url), host_url)
         resp: Optional[httpx.Response] = None
-        # Multi-host AJAX routing: handle requests to non-default Amazon
-        # subdomains that the injected JavaScript redirected through the proxy.
-        # Path format: .../proxy/__amzn_host__fls-eu.amazon.com/1/batch/...
-        _amzn_host_marker = "/__amzn_host__"
-        _req_path = URL(str(request.url)).path
-        if _amzn_host_marker in _req_path:
-            _marker_pos = _req_path.index(_amzn_host_marker) + len(_amzn_host_marker)
-            _remaining = _req_path[_marker_pos:]
-            _slash_pos = _remaining.find("/")
-            if _slash_pos > 0:
-                _alt_host = _remaining[:_slash_pos]
-                _alt_path = _remaining[_slash_pos:]
-            else:
-                _alt_host = _remaining
-                _alt_path = "/"
-            if not _alt_host:
-                _LOGGER.warning(
-                    "Malformed __amzn_host__ path: no host in %s", _req_path,
-                )
-                return await self._build_response(
-                    text="Invalid multi-host AJAX path",
-                )
-            # Derive allowed hosts from the proxy target domain instead
-            # of a hardcoded region list, to support all Amazon regions.
-            _root_host = re.sub(r"^www\.", "", str(self._host_url.host or ""))
-            _allowed_host_pattern = (
-                rf'(^|\.)({re.escape(_root_host)}'
-                r'|awswaf\.com|amazoncognito\.com|ssl-images-amazon\.com)$'
-            )
-            if not re.search(_allowed_host_pattern, _alt_host):
-                _LOGGER.warning(
-                    "Blocked request to non-Amazon host via __amzn_host__: %s",
-                    _alt_host,
-                )
-                return await self._build_response(
-                    text="Host not allowed",
-                )
-            site = f"https://{_alt_host}{_alt_path}"
-            if request.query_string:
-                site += f"?{request.query_string}"
-            _LOGGER.debug(
-                "Multi-host AJAX proxy: %s -> %s", _req_path, site,
-            )
+        # Create interceptor context for the request pipeline
+        ctx = InterceptContext(
+            request=request,
+            proxy=self,
+            access_url=access_url,
+            host_url=host_url,
+            method=method,
+        )
+        # Run on_request interceptors (can set ctx.site for custom URL routing)
+        for interceptor in self._interceptors:
+            await interceptor.on_request(ctx)
+            if ctx.short_circuit:
+                return ctx.short_circuit
+        if ctx.site:
+            # Interceptor set the target URL (e.g., multi-host routing)
+            site = ctx.site
         else:
+            # Generic URL resolution
             old_url: URL = (
                 access_url.with_host(request.url.host)
                 if request.url.host and request.url.host != access_url.host
                 else access_url
             )
             if request.scheme == "http" and access_url.scheme == "https":
-                # detect reverse proxy downgrade
                 _LOGGER.debug("Detected http while should be https; switching to https")
-                site: str = str(
+                site = str(
                     swap_url(
                         ignore_query=True,
                         old_url=old_url.with_scheme("https"),
@@ -483,75 +476,15 @@ class AuthCaptureProxy:
         if data:
             self.data.update(data)
             _LOGGER.debug("Storing data %s", data)
-            # Previously appended TOTP to password for signin to bypass
-            # CVF. No longer needed: the aamation captcha challenge now
-            # handles CVF verification. Appending TOTP to the password
-            # causes Amazon to reject the password as incorrect.
-            if (
-                data.get("password")
-                and hasattr(self, '_login')
-                and self._login is not None
-                and "/ap/signin" in site
-            ):
-                _LOGGER.debug(
-                    "Signin POST: password present (not appending TOTP), "
-                    "site: %s",
-                    site,
-                )
-            # Fix CVF verify POST from browser.
-            # The browser's JS fails the aamation challenge with NetworkError
-            # (AJAX can't reach Amazon's servers through the proxy) and sets
-            # a fake "staticSessionToken". We ALWAYS strip the failed aamation
-            # data so Amazon doesn't see the JS error. OTP is injected only
-            # when a TOTP key is configured.
-            if (
-                hasattr(self, '_login')
-                and self._login is not None
-                and "/ap/cvf/verify" in site
-            ):
-                _aam_token = data.get("cvf_aamation_response_token", "")
-                _LOGGER.debug(
-                    "CVF verify POST: aamation_token='%.40s', "
-                    "error_code='%s', captcha_action='%s', "
-                    "clientSideContext=%s",
-                    _aam_token,
-                    data.get("cvf_aamation_error_code", ""),
-                    data.get("cvf_captcha_captcha_action", ""),
-                    "present" if data.get("clientSideContext") else "absent",
-                )
-                # Validate aamation token by attempting base64 decode + JSON parse
-                _aam_token_valid = False
-                if _aam_token:
-                    try:
-                        import base64
-                        import json as _json
-                        _padded = _aam_token + "=" * (-len(_aam_token) % 4)
-                        _decoded_token = base64.urlsafe_b64decode(_padded)
-                        _json.loads(_decoded_token)
-                        _aam_token_valid = True
-                    except (ValueError, Exception):
-                        pass
-                if _aam_token_valid:
-                    _LOGGER.debug(
-                        "CVF verify: valid aamation token detected, "
-                        "forwarding as-is with %d fields",
-                        len(data),
-                    )
-                else:
-                    # Aamation challenge failed - clear and inject OTP
-                    data["cvf_aamation_response_token"] = ""
-                    data["cvf_aamation_error_code"] = ""
-                    data["cvf_captcha_captcha_action"] = ""
-                    _get_totp = getattr(self._login, "get_totp_token", None)
-                    _totp_for_cvf = _get_totp() if callable(_get_totp) else None
-                    if _totp_for_cvf:
-                        data["otpCode"] = _totp_for_cvf
-                        data["rememberDevice"] = "true"
-                    _LOGGER.debug(
-                        "CVF verify: no valid aamation, cleared fields, "
-                        "OTP=%s",
-                        "injected" if _totp_for_cvf else "not available",
-                    )
+            # Run on_request_data interceptors (can modify data before HTTP request)
+            ctx.site = site
+            ctx.data = data
+            ctx.json_data = json_data
+            for interceptor in self._interceptors:
+                await interceptor.on_request_data(ctx)
+                if ctx.short_circuit:
+                    return ctx.short_circuit
+            data = ctx.data
         elif json_data:
             self.data.update(json_data)
             _LOGGER.debug("Storing json %s", json_data)
@@ -663,21 +596,13 @@ class AuthCaptureProxy:
             return await self._build_response(text=f"Error connecting to {site}; please retry")
         self.last_resp = resp
         print_resp(resp)
-        # CVF page detection - log only, let browser handle the page.
-        # The browser's JavaScript must complete the aamation challenge to fill
-        # cvf_aamation_response_token. When the browser submits the form,
-        # the proxy injects otpCode into the POST data (see above).
-        if (
-            resp is not None
-            and resp.status_code == 200
-            and hasattr(self, '_login')
-            and self._login is not None
-            and "/ap/cvf/" in URL(str(resp.url)).path
-        ):
-            _LOGGER.debug(
-                "CVF page detected at %s - browser aamation challenge",
-                resp.url,
-            )
+        # Run on_response interceptors (post-response, pre-tests)
+        ctx.response = resp
+        ctx.site = site
+        for interceptor in self._interceptors:
+            await interceptor.on_response(ctx)
+            if ctx.short_circuit:
+                return ctx.short_circuit
         self.check_redirects()
         self.refresh_tests()
         if self.tests:
@@ -719,152 +644,20 @@ class AuthCaptureProxy:
             )
         if _is_ajax and content_type == "text/html":
             _ajax_body = resp.content
-            # Inject P shim + mini jQuery into aaut/verify/cvf response
-            # so that Amazon's A-framework dependency P.when('A','ready')
-            # resolves and CaptchaScript.renderCaptcha() can execute.
-            if "/aaut/verify/cvf" in URL(str(request.url)).path and _ajax_body:
-                try:
-                    _decoded = _ajax_body.decode("utf-8", errors="replace")
-                    # Extract the awswaf.com hostname from the script src
-                    _awswaf_match = re.search(
-                        r'src=["\']https?://([a-z0-9.\-]+\.awswaf\.com)',
-                        _decoded, re.IGNORECASE,
-                    )
-                    _awswaf_host = _awswaf_match.group(1) if _awswaf_match else ""
-                    _LOGGER.debug(
-                        "Extracted awswaf host from aaut HTML: %s",
-                        _awswaf_host or "(not found)",
-                    )
-                    # Extract the real Amazon domain from self._host_url
-                    # so captcha.js sends the correct domain to WAF (not 192.168.x.x)
-                    _amazon_domain = str(self._host_url.host) if self._host_url else ""
-                    _LOGGER.debug(
-                        "Amazon domain for WAF captcha: %s",
-                        _amazon_domain or "(not found)",
-                    )
-                    # Sanitize hostnames before interpolating into JavaScript
-                    _safe_host_re = re.compile(r'^[a-z0-9.\-]+$', re.IGNORECASE)
-                    if _awswaf_host and not _safe_host_re.match(_awswaf_host):
-                        _LOGGER.warning("Skipping invalid awswaf host: %s", _awswaf_host)
-                        _awswaf_host = ""
-                    if _amazon_domain and not _safe_host_re.match(_amazon_domain):
-                        _LOGGER.warning("Skipping invalid amazon domain: %s", _amazon_domain)
-                        _amazon_domain = ""
-                    # AJAX proxy wrapper for the aaut iframe context.
-                    # captcha.js uses relative URLs (e.g., /ait/ait/ait/verify)
-                    # which need to be routed through the proxy to awswaf.com.
-                    _aaut_ajax_proxy = (
-                        '<script>'
-                        '(function(){'
-                        'var pp=window.location.pathname.split("/aaut/")[0];'
-                        'if(!pp||pp===window.location.pathname)pp=window.location.pathname.split("/ap/")[0];'
-                        'var wafHost="' + _awswaf_host + '";'
-                        'var amazonDomain="' + _amazon_domain + '";'
-                        'function rw(u){'
-                        'try{var p=new URL(u,window.location.href);'
-                        'if(p.hostname.match(/\\.awswaf\\.com$/)){'
-                        'return pp+"/__amzn_host__"+p.hostname+p.pathname+p.search;}'
-                        'if(wafHost&&p.hostname===window.location.hostname'
-                        '&&p.pathname.indexOf("/ait/")===0){'
-                        'return pp+"/__amzn_host__"+wafHost+p.pathname+p.search;}'
-                        'if(p.hostname.match(/\\.(amazon\\.(com|it|co\\.uk|de|fr|es|co\\.jp|ca|com\\.au|in|com\\.br)|amazoncognito\\.com)$/)){'
-                        'if(p.hostname==="www.amazon.com"||p.hostname===window.location.hostname)'
-                        'return pp+p.pathname+p.search;'
-                        'return pp+"/__amzn_host__"+p.hostname+p.pathname+p.search;}'
-                        '}catch(e){}return u;}'
-                        'var xo=XMLHttpRequest.prototype.open;'
-                        'XMLHttpRequest.prototype.open=function(m,u){'
-                        'if(typeof u==="string"){this.__origUrl=u;arguments[1]=rw(u);}'
-                        'return xo.apply(this,arguments);};'
-                        'var _xrd=Object.getOwnPropertyDescriptor(XMLHttpRequest.prototype,"responseURL");'
-                        'if(_xrd&&_xrd.get){Object.defineProperty(XMLHttpRequest.prototype,"responseURL",{'
-                        'get:function(){return this.__origUrl||_xrd.get.call(this);},configurable:true});}'
-                        # Wrap fetch with domain rewriting.
-                        # The /problem request sends domain=window.location.hostname
-                        # (e.g., 192.168.1.103) which WAF rejects. Rewrite to the
-                        # real Amazon domain so WAF validates correctly.
-                        'var fo=window.fetch;'
-                        'if(fo)window.fetch=function(i,n){'
-                        'var orig=typeof i==="string"?i:i;'
-                        'if(amazonDomain&&typeof i==="string"&&i.indexOf("/problem")!==-1){'
-                        'i=i.replace(/domain=[^&]+/,"domain="+encodeURIComponent(amazonDomain));}'
-                        'if(typeof i==="string")i=rw(i);'
-                        'return fo.call(this,i,n).then(function(r){'
-                        'if(i!==orig)Object.defineProperty(r,"url",{value:orig,configurable:true});'
-                        'return r;'
-                        '});};'
-                        '})();'
-                        '</script>'
-                    )
-                    _p_shim = (
-                        '<script>'
-                        '(function(){'
-                        # Mini jQuery shim providing $(), .click(), .length
-                        'function mQ(s){'
-                        'var els=document.querySelectorAll(s);'
-                        'var r=Array.prototype.slice.call(els);'
-                        'r.click=function(fn){r.forEach(function(e){e.addEventListener("click",fn)});return r;};'
-                        'return r;}'
-                        # P.when(...).execute(fn) shim - waits for CaptchaScript
-                        'window.P=window.P||{when:function(){'
-                        'return{execute:function(fn){'
-                        'function go(){'
-                        'if(typeof CaptchaScript!=="undefined"){'
-                        'try{fn({$:mQ});}catch(e){console.error("[AMP] P shim execute error:",e);}'
-                        '}else{setTimeout(go,100);}}'
-                        'if(document.readyState==="loading"){'
-                        'document.addEventListener("DOMContentLoaded",go);'
-                        '}else{go();}'
-                        '}};'
-                        '}};'
-                        '})();'
-                        '</script>'
-                    )
-                    # Inject shim right before the first <script> in <head>
-                    _head_end = _decoded.lower().find('</head>')
-                    if _head_end < 0:
-                        _head_end = _decoded.lower().find('<body')
-                    _first_script = _decoded.lower().find('<script', 1)
-                    if _first_script > 0:
-                        _inject_pos = _first_script
-                    elif _head_end > 0:
-                        _inject_pos = _head_end
-                    else:
-                        _inject_pos = 0
-                    _decoded = _decoded[:_inject_pos] + _aaut_ajax_proxy + _p_shim + _decoded[_inject_pos:]
-                    # Rewrite captcha.js <script src> to load through the proxy.
-                    # captcha.js determines its base URL by scanning <script> tags
-                    # for src ending with /captcha.js. By proxying the script,
-                    # p() returns a proxy URL, so /problem and /verify API calls
-                    # naturally route through the proxy (the URL path already
-                    # contains __amzn_host__).
-                    if _awswaf_host:
-                        _proxy_prefix = URL(str(request.url)).path.split("/aaut/")[0]
-                        if not _proxy_prefix or _proxy_prefix == URL(str(request.url)).path:
-                            _proxy_prefix = URL(str(request.url)).path.split("/ap/")[0]
-                        _old_waf_base = f"https://{_awswaf_host}/"
-                        _new_waf_base = f"{_proxy_prefix}/__amzn_host__{_awswaf_host}/"
-                        _decoded = _decoded.replace(_old_waf_base, _new_waf_base)
-                        _LOGGER.debug(
-                            "Rewrote awswaf script src to proxy: %s -> %s",
-                            _old_waf_base, _new_waf_base,
-                        )
-                    _ajax_body = _decoded.encode("utf-8")
-                    _LOGGER.debug(
-                        "Injected P shim + AJAX proxy into aaut/verify/cvf response (%d -> %d bytes)",
-                        len(resp.content),
-                        len(_ajax_body),
-                    )
-                except (UnicodeDecodeError, AttributeError, TypeError) as _e:
-                    _LOGGER.warning("Failed to inject P shim into aaut response: %s", _e)
+            # Run on_ajax_html interceptors (can modify AJAX HTML body)
+            ctx.is_ajax = True
+            ctx.content_type = content_type
+            ctx.body = _ajax_body
+            for interceptor in self._interceptors:
+                await interceptor.on_ajax_html(ctx)
+            _ajax_body = ctx.body if ctx.body is not None else _ajax_body
             _LOGGER.debug(
                 "AJAX HTML response for %s - skipping modifiers",
                 URL(str(request.url)).path,
             )
-            # Forward original Amazon headers for AJAX responses.
-            # The CVF JavaScript checks response headers (e.g., for CAPTCHA
-            # initialization). Without them, it logs "ResponseHeader is null"
-            # and the CAPTCHA never loads.
+            # Forward original headers for AJAX responses.
+            # Client-side JavaScript may check response headers (e.g., for CAPTCHA
+            # initialization). Without them, it may fail silently.
             _ajax_headers = self._filter_ajax_headers(resp) if resp is not None else {}
             return await self._build_response(
                 resp, body=_ajax_body, content_type=content_type,
@@ -895,10 +688,6 @@ class AuthCaptureProxy:
             if not isinstance(text, str):  # process aiohttp text
                 text = await resp.text()
             # Resolve relative form actions BEFORE modifiers run.
-            # The modifiers (prepend_relative_urls) prepend the proxy base URL
-            # but don't account for the response URL path. E.g., a form action
-            # "verify" on page /ap/cvf/request should resolve to /ap/cvf/verify,
-            # not just /verify.
             if text and content_type == "text/html" and resp and resp.url:
                 _resp_url = URL(str(resp.url))
                 _resp_dir = _resp_url.path.rsplit("/", 1)[0] + "/" if "/" in _resp_url.path else "/"
@@ -916,11 +705,6 @@ class AuthCaptureProxy:
                         ("http://", "https://", "//", "#", "javascript:", "/")
                     ):
                         resolved_path = _resp_dir + action
-                        # Use PROXY URL (not Amazon URL) so the form submits
-                        # through the proxy. The change_host_to_proxy modifier
-                        # may not match if _host_url changed (e.g., amazon.it
-                        # -> amazon.com redirect) since its partial has frozen
-                        # parameters from the original host.
                         _proxy_base = self.access_url().path.rstrip("/")
                         abs_url = str(
                             self.access_url().with_path(
@@ -938,179 +722,20 @@ class AuthCaptureProxy:
                         )
                     return form_tag
 
-                # Only resolve action= inside <form> tags to avoid corrupting
-                # custom attributes like data-action, action on <div>, etc.
                 text = re.sub(
                     r'<form\b[^>]*>',
                     _resolve_form_action,
                     text,
                     flags=re.IGNORECASE,
                 )
-            # Inject AJAX proxy script into CVF pages so that the aamation
-            # challenge JavaScript can reach Amazon's servers through the proxy
-            # instead of failing with NetworkError due to CORS/cross-origin.
-            if (
-                text
-                and content_type == "text/html"
-                and resp
-                and "/ap/cvf/" in URL(str(resp.url)).path
-            ):
-                # Block CVF form auto-submit to give the CAPTCHA time to load.
-                # The aamation JS sets EmptyResponse and auto-submits in ~24ms.
-                # We block form.submit() until either:
-                # a) The CAPTCHA is solved (aa-challenge-complete postMessage)
-                # b) A fallback timeout expires (15 seconds)
-                _submit_blocker_js = (
-                    '<script>'
-                    '(function(){'
-                    'var _origSubmit=HTMLFormElement.prototype.submit;'
-                    'var _blocked=true;'
-                    'var _pendingForm=null;'
-                    'HTMLFormElement.prototype.submit=function(){'
-                    'if(_blocked){'
-                    'console.log("[AMP] Form submit BLOCKED - waiting for CAPTCHA");'
-                    '_pendingForm=this;'
-                    'return;}'
-                    'return _origSubmit.apply(this,arguments);};'
-                    # Also intercept submit via button click / form.requestSubmit()
-                    # IMPORTANT: Only block the CVF form, NOT the captcha's internal
-                    # form. The captcha creates its own <form onSubmit=...> and if we
-                    # stopPropagation here, the captcha's handler never fires and
-                    # fetch("/verify") is never called.
-                    'document.addEventListener("submit",function(e){'
-                    'if(_blocked){'
-                    'var f=e.target;'
-                    'var isCVF=f&&f.querySelector&&f.querySelector("[name=cvf_aamation_response_token]");'
-                    'if(isCVF){'
-                    'e.preventDefault();e.stopPropagation();'
-                    'console.log("[AMP] CVF form submit BLOCKED");'
-                    '_pendingForm=f;'
-                    'return false;}'
-                    '}},true);'
-                    # Unblock on aa-challenge-complete message from CAPTCHA iframe
-                    # IMPORTANT: Do NOT submit the form immediately! ACIC needs to
-                    # make an XHR to /aaut/verify/cvf to get the sessionToken, which
-                    # must be set as cvf_aamation_response_token before submitting.
-                    # We intercept XHR responses to /aaut/verify/cvf and extract the
-                    # sessionToken from the amz-aamation-resp header.
-                    'var _captchaVoucher=null;'
-                    'var _waitingForAaut=false;'
-                    # Override XHR send to watch for /aaut/verify/cvf responses
-                    'var _origSend=XMLHttpRequest.prototype.send;'
-                    'XMLHttpRequest.prototype.send=function(){'
-                    'var xhr=this;'
-                    'if(_waitingForAaut){'
-                    'var xurl=xhr.__origUrl||"";'
-                    'if(xurl.indexOf("/aaut/verify/cvf")!==-1){'
-                    'xhr.addEventListener("load",function(){'
-                    'try{'
-                    'var aamResp=xhr.getResponseHeader("amz-aamation-resp");'
-                    'if(aamResp){'
-                    'var rd=JSON.parse(aamResp);'
-                    'if(rd.sessionToken){'
-                    'console.log("[AMP] Got sessionToken from aaut verify response");'
-                    'var tok=document.querySelector("[name=cvf_aamation_response_token]");'
-                    'if(tok){tok.value=rd.sessionToken;}'
-                    'var err=document.querySelector("[name=cvf_aamation_error_code]");'
-                    'if(err)err.value="";'
-                    'var act=document.querySelector("[name=cvf_captcha_captcha_action]");'
-                    'if(act)act.value="verifyAamationChallenge";'
-                    # Also add clientSideContext - find form from DOM, not _pendingForm
-                    'if(rd.clientSideContext){'
-                    'var csc=decodeURIComponent(rd.clientSideContext);'
-                    'var cscField=document.querySelector("[name=clientSideContext]");'
-                    'if(!cscField){'
-                    'var tokEl=document.querySelector("[name=cvf_aamation_response_token]");'
-                    'var cvfForm=tokEl?(tokEl.closest?tokEl.closest("form"):tokEl.form):null;'
-                    'if(cvfForm){'
-                    'cscField=document.createElement("input");'
-                    'cscField.type="hidden";cscField.name="clientSideContext";'
-                    'cvfForm.appendChild(cscField);}}'
-                    'if(cscField){cscField.value=csc;}'
-                    '_waitingForAaut=false;'
-                    '}}}'
-                    'catch(e){console.error("[AMP] Error processing aaut response:",e);}'
-                    '});'
-                    '}}'
-                    'return _origSend.apply(this,arguments);};'
-                    # Message listener
-                    'window.addEventListener("message",function(ev){'
-                    'try{var d=JSON.parse(ev.data);'
-                    'if(d.eventId==="aa-challenge-complete"){'
-                    'console.log("[AMP] CAPTCHA solved! voucher="+d.payload.substring(0,80)+"...");'
-                    '_blocked=false;'
-                    '_captchaVoucher=d.payload;'
-                    '_waitingForAaut=true;'
-                    # Fallback: if ACIC XHR doesn't complete in 5s, submit with voucher
-                    'setTimeout(function(){'
-                    'if(_waitingForAaut){'
-                    'console.log("[AMP] ACIC timeout - submitting form with voucher as fallback");'
-                    'var tok=document.querySelector("[name=cvf_aamation_response_token]");'
-                    'if(tok){'
-                    'tok.value=_captchaVoucher;}'
-                    'var err=document.querySelector("[name=cvf_aamation_error_code]");'
-                    'if(err)err.value="";'
-                    'var act=document.querySelector("[name=cvf_captcha_captcha_action]");'
-                    'if(act)act.value="verifyAamationChallenge";'
-                    'if(_pendingForm){_origSubmit.call(_pendingForm);}'
-                    '_waitingForAaut=false;'
-                    '}},5000);'
-                    '}'
-                    'if(d.eventId==="aa-challenge-loaded"){'
-                    '}'
-                    '}catch(e){}});'
-                    # Fallback: unblock after 15 seconds
-                    'setTimeout(function(){'
-                    'if(_blocked){'
-                    'console.log("[AMP] Fallback timeout - unblocking form submit");'
-                    '_blocked=false;'
-                    'if(_pendingForm){_origSubmit.call(_pendingForm);}'
-                    '}},15000);'
-                    '})();'
-                    '</script>'
-                )
-                _ajax_proxy_js = (
-                    '<script>'
-                    '(function(){'
-                    'var pp=window.location.pathname.split("/ap/")[0];'
-                    'function rw(u){'
-                    'try{var p=new URL(u,window.location.href);'
-                    'if(p.hostname.match(/\\.(amazon\\.(com|it|co\\.uk|de|fr|es|co\\.jp|ca|com\\.au|in|com\\.br)|awswaf\\.com|amazoncognito\\.com|ssl-images-amazon\\.com)$/)){'
-                    'if(p.hostname==="www.amazon.com"||p.hostname===window.location.hostname)'
-                    'return pp+p.pathname+p.search;'
-                    'return pp+"/__amzn_host__"+p.hostname+p.pathname+p.search;'
-                    '}}catch(e){}return u;}'
-                    'var xo=XMLHttpRequest.prototype.open;'
-                    'XMLHttpRequest.prototype.open=function(m,u){'
-                    'if(typeof u==="string"){this.__origUrl=u;arguments[1]=rw(u);}'
-                    'return xo.apply(this,arguments);};'
-                    'var _xrd=Object.getOwnPropertyDescriptor(XMLHttpRequest.prototype,"responseURL");'
-                    'if(_xrd&&_xrd.get){Object.defineProperty(XMLHttpRequest.prototype,"responseURL",{'
-                    'get:function(){return this.__origUrl||_xrd.get.call(this);},configurable:true});}'
-                    'var fo=window.fetch;'
-                    'if(fo)window.fetch=function(i,n){'
-                    'var orig=typeof i==="string"?i:i;'
-                    'if(typeof i==="string")i=rw(i);'
-                    'if(i===orig)return fo.call(this,i,n);'
-                    'console.log("[AMP] fetch rewrite:",orig.substring(0,80),"->",i.substring(0,80));'
-                    'return fo.call(this,i,n).then(function(r){'
-                    'Object.defineProperty(r,"url",{value:orig,configurable:true});'
-                    'return r;});};'
-                    'var sb=navigator.sendBeacon;'
-                    'if(sb)navigator.sendBeacon=function(u,d){'
-                    'return sb.call(this,rw(u),d);};'
-                    '})();'
-                    '</script>'
-                )
-                # Insert before the very first <script> tag so our wrappers
-                # are installed before any Amazon JavaScript runs.
-                _script_pos = text.lower().find('<script')
-                if _script_pos >= 0:
-                    text = text[:_script_pos] + _submit_blocker_js + _ajax_proxy_js + text[_script_pos:]
-                    _LOGGER.debug(
-                        "Injected submit blocker + AJAX proxy into CVF page (%s)",
-                        resp.url,
-                    )
+            # Run on_page_html interceptors (can inject scripts before modifiers)
+            if text and content_type == "text/html":
+                ctx.text = text
+                ctx.content_type = content_type
+                ctx.is_ajax = False
+                for interceptor in self._interceptors:
+                    await interceptor.on_page_html(ctx)
+                text = ctx.text if ctx.text is not None else text
             if text:
                 for name, modifier in self.modifiers.items():
                     if isinstance(modifier, dict):
@@ -1130,7 +755,6 @@ class AuthCaptureProxy:
                                 modified = True
                             except TypeError as ex:
                                 _LOGGER.warning("Modifier %s is not callable: %s", name, ex)
-                # _LOGGER.debug("Returning modified text:\n%s", text)
             if modified:
                 return await self._build_response(
                     resp,
