@@ -507,7 +507,7 @@ class AuthCaptureProxy:
                 and "/ap/cvf/verify" in site
             ):
                 _aam_token = data.get("cvf_aamation_response_token", "")
-                _LOGGER.warning(
+                _LOGGER.debug(
                     "CVF verify POST: aamation_token='%.40s', "
                     "error_code='%s', captcha_action='%s', "
                     "clientSideContext=%s",
@@ -518,7 +518,7 @@ class AuthCaptureProxy:
                 )
                 # If aamation token looks valid (base64 JSON), keep it
                 if _aam_token and _aam_token.startswith("eyJ"):
-                    _LOGGER.warning(
+                    _LOGGER.debug(
                         "CVF verify: valid aamation token detected, "
                         "forwarding as-is with %d fields",
                         len(data),
@@ -528,11 +528,12 @@ class AuthCaptureProxy:
                     data["cvf_aamation_response_token"] = ""
                     data["cvf_aamation_error_code"] = ""
                     data["cvf_captcha_captcha_action"] = ""
-                    _totp_for_cvf = self._login.get_totp_token()
+                    _get_totp = getattr(self._login, "get_totp_token", None)
+                    _totp_for_cvf = _get_totp() if callable(_get_totp) else None
                     if _totp_for_cvf:
                         data["otpCode"] = _totp_for_cvf
                         data["rememberDevice"] = "true"
-                    _LOGGER.warning(
+                    _LOGGER.debug(
                         "CVF verify: no valid aamation, cleared fields, "
                         "OTP=%s",
                         "injected" if _totp_for_cvf else "not available",
@@ -723,6 +724,14 @@ class AuthCaptureProxy:
                         "Amazon domain for WAF captcha: %s",
                         _amazon_domain or "(not found)",
                     )
+                    # Sanitize hostnames before interpolating into JavaScript
+                    _safe_host_re = re.compile(r'^[a-z0-9.\-]+$', re.IGNORECASE)
+                    if _awswaf_host and not _safe_host_re.match(_awswaf_host):
+                        _LOGGER.warning("Skipping invalid awswaf host: %s", _awswaf_host)
+                        _awswaf_host = ""
+                    if _amazon_domain and not _safe_host_re.match(_amazon_domain):
+                        _LOGGER.warning("Skipping invalid amazon domain: %s", _amazon_domain)
+                        _amazon_domain = ""
                     # AJAX proxy wrapper for the aaut iframe context.
                     # captcha.js uses relative URLs (e.g., /ait/ait/ait/verify)
                     # which need to be routed through the proxy to awswaf.com.
