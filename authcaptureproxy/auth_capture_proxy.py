@@ -236,6 +236,23 @@ class AuthCaptureProxy:
             refreshed_modifers = get_nested_dict_keys(self.modifiers)
             _LOGGER.debug("Refreshed %s modifiers: %s", len(refreshed_modifers), refreshed_modifers)
 
+    @staticmethod
+    def _filter_ajax_headers(resp: httpx.Response) -> dict:
+        """Filter headers for AJAX responses, removing hop-by-hop and CSP headers."""
+        _skip_headers = {
+            "content-type", "content-length", "content-encoding",
+            "transfer-encoding", "connection",
+            "x-connection-hash", "set-cookie",
+            "content-security-policy",
+            "content-security-policy-report-only",
+        }
+        filtered = {}
+        for k, v in resp.headers.items():
+            if k.lower() not in _skip_headers:
+                filtered[k] = v
+        filtered["Cache-Control"] = "no-cache, no-store, must-revalidate"
+        return filtered
+
     async def _build_response(
         self, response: Optional[httpx.Response] = None, *args, **kwargs
     ) -> web.Response:
@@ -327,12 +344,12 @@ class AuthCaptureProxy:
                                 Union[Text, Dict[Text, Any], List[Tuple[Text, Text]], bytes]
                             ] = await part.json()
                             writer.append_json(part_data)
-                        except Exception:
+                        except (JSONDecodeError, ValueError, TypeError):
                             # Best-effort fallback: text, then bytes
                             try:
                                 part_text = await part.text()
                                 writer.append(part_text)
-                            except Exception:
+                            except (UnicodeDecodeError, ValueError):
                                 part_data = await part.read()
                                 writer.append(part_data)
                     elif mime_type.startswith("text"):
@@ -376,6 +393,25 @@ class AuthCaptureProxy:
             else:
                 _alt_host = _remaining
                 _alt_path = "/"
+            if not _alt_host:
+                _LOGGER.warning(
+                    "Malformed __amzn_host__ path: no host in %s", _req_path,
+                )
+                return await self._build_response(
+                    text="Invalid multi-host AJAX path",
+                )
+            _allowed_host_patterns = (
+                r'\.(amazon\.(com|it|co\.uk|de|fr|es|co\.jp|ca|com\.au|in|com\.br)'
+                r'|awswaf\.com|amazoncognito\.com|ssl-images-amazon\.com)$'
+            )
+            if not re.search(_allowed_host_patterns, _alt_host):
+                _LOGGER.warning(
+                    "Blocked request to non-Amazon host via __amzn_host__: %s",
+                    _alt_host,
+                )
+                return await self._build_response(
+                    text="Host not allowed",
+                )
             site = f"https://{_alt_host}{_alt_path}"
             if request.query_string:
                 site += f"?{request.query_string}"
@@ -792,7 +828,7 @@ class AuthCaptureProxy:
                         len(resp.content),
                         len(_ajax_body),
                     )
-                except Exception as _e:
+                except (UnicodeDecodeError, AttributeError, TypeError) as _e:
                     _LOGGER.warning("Failed to inject P shim into aaut response: %s", _e)
             _LOGGER.debug(
                 "AJAX HTML response for %s - skipping modifiers",
@@ -802,23 +838,7 @@ class AuthCaptureProxy:
             # The CVF JavaScript checks response headers (e.g., for CAPTCHA
             # initialization). Without them, it logs "ResponseHeader is null"
             # and the CAPTCHA never loads.
-            _ajax_headers = {}
-            if resp is not None:
-                for k, v in resp.headers.items():
-                    _lk = k.lower()
-                    # Skip hop-by-hop, encoding, content-type, and CSP headers
-                    # (content-type is passed separately via content_type param;
-                    # CSP headers could block proxy URLs)
-                    if _lk in (
-                        "content-type", "content-length", "content-encoding",
-                        "transfer-encoding", "connection",
-                        "x-connection-hash", "set-cookie",
-                        "content-security-policy",
-                        "content-security-policy-report-only",
-                    ):
-                        continue
-                    _ajax_headers[k] = v
-                _ajax_headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+            _ajax_headers = self._filter_ajax_headers(resp) if resp is not None else {}
             return await self._build_response(
                 resp, body=_ajax_body, content_type=content_type,
                 headers=_ajax_headers,
@@ -831,20 +851,7 @@ class AuthCaptureProxy:
                 URL(str(request.url)).path,
             )
             _resp_body = resp.content
-            _ajax_headers_nh = {}
-            if resp is not None:
-                for k, v in resp.headers.items():
-                    _lk = k.lower()
-                    if _lk in (
-                        "content-type", "content-length", "content-encoding",
-                        "transfer-encoding", "connection",
-                        "x-connection-hash", "set-cookie",
-                        "content-security-policy",
-                        "content-security-policy-report-only",
-                    ):
-                        continue
-                    _ajax_headers_nh[k] = v
-                _ajax_headers_nh["Cache-Control"] = "no-cache, no-store, must-revalidate"
+            _ajax_headers_nh = self._filter_ajax_headers(resp) if resp is not None else {}
             return await self._build_response(
                 resp, body=_resp_body, content_type=content_type,
                 headers=_ajax_headers_nh,
