@@ -57,11 +57,8 @@ class AuthCaptureProxy:
         """Initialize proxy object.
 
         Args:
-            proxy_url (URL): url for proxy location. e.g., http://192.168.1.1/.
-                If there is any path, the path is considered part of the base url.
-                If no explicit port is specified, a random port will be generated.
-                If https is passed in, ssl_context must be provided at start_proxy() or the url will be downgraded to http.
-            host_url (URL): original url for login, e.g., http://amazon.com
+            proxy_url (URL): url for proxy location. e.g., http://192.168.1.1/. If there is any path, the path is considered part of the base url. If no explicit port is specified, a random port will be generated. If https is passed in, ssl_context must be provided at start_proxy() or the url will be downgraded to http.
+            host_url (URL): original url for login, e.g., http://example.com
             session (httpx.AsyncClient): httpx client to make queries. Optional
             session_factory (lambda: httpx.AsyncClient): factory to create the aforementioned httpx client if having one fixed session is insufficient.
             preserve_headers (bool): Whether to preserve headers from the backend. Useful in circumventing CSRF protection. Defaults to False.
@@ -184,7 +181,7 @@ class AuthCaptureProxy:
         This will also reset all stored data.
 
         Args:
-            new_url (URL): original url for login, e.g., http://amazon.com
+            new_url (URL): original url for login, e.g., http://example.com
         """
         if not isinstance(new_url, URL):
             raise ValueError("URL required")
@@ -885,9 +882,8 @@ class AuthCaptureProxy:
         if result.get("Host"):
             result.pop("Host")
         if result.get("Origin"):
-            # Always use the Amazon host as Origin, not the target site.
-            # For third-party services (e.g., awswaf.com CAPTCHA verify),
-            # Origin must match the page that loaded the script (Amazon).
+            # Use the configured host URL as Origin for cross-origin requests.
+            # Third-party services may validate Origin against the page that loaded them.
             result["Origin"] = f"{self._host_url.with_path('')}"
         # remove any cookies in header received from browser. If not removed, httpx will not send session cookies
         if result.get("Cookie"):
