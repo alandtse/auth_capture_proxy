@@ -2,6 +2,7 @@
 """Python Package for auth capture proxy."""
 import asyncio
 import logging
+import posixpath
 import re
 from json import JSONDecodeError
 from functools import partial
@@ -701,7 +702,7 @@ class AuthCaptureProxy:
                     if action and not action.startswith(
                         ("http://", "https://", "//", "#", "javascript:", "/")
                     ):
-                        resolved_path = _resp_dir + action
+                        resolved_path = posixpath.normpath(_resp_dir + action)
                         _proxy_base = self.access_url().path.rstrip("/")
                         abs_url = str(
                             self.access_url().with_path(
