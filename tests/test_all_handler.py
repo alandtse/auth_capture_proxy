@@ -109,11 +109,11 @@ async def test_handler_interceptor_short_circuits_request():
 
     proxy.interceptors = [BlockInterceptor()]
     req = _make_request()
+    # Explicitly set get to raise if called (should never happen)
+    mock_session.get = AsyncMock(side_effect=AssertionError("HTTP request should not be made"))
 
     result = await proxy.all_handler(req)
     assert result.text == "Blocked by interceptor"
-    # HTTP request should never have been made
-    mock_session.get.assert_not_called()
 
 
 @pytest.mark.asyncio
@@ -185,6 +185,7 @@ async def test_handler_interceptor_modifies_page_html():
 async def test_handler_interceptor_short_circuits_response():
     """on_response sets ctx.short_circuit."""
     proxy, mock_session = _make_proxy()
+    proxy._tests = {"dummy": lambda resp, data, query: None}  # noqa: E731
 
     class ResponseBlocker(BaseInterceptor):
         async def on_response(self, ctx):
