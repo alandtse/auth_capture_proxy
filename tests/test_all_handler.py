@@ -103,16 +103,22 @@ async def test_handler_interceptor_short_circuits_request():
     """on_request sets ctx.short_circuit, returns early."""
     proxy, mock_session = _make_proxy()
 
+    interceptor_called = False
+
     class BlockInterceptor(BaseInterceptor):
         async def on_request(self, ctx):
+            nonlocal interceptor_called
+            interceptor_called = True
             ctx.short_circuit = web.Response(text="Blocked by interceptor")
 
     proxy.interceptors = [BlockInterceptor()]
+    assert len(proxy._interceptors) == 1, "Interceptors not set correctly"
     req = _make_request()
     # Explicitly set get to raise if called (should never happen)
     mock_session.get = AsyncMock(side_effect=AssertionError("HTTP request should not be made"))
 
     result = await proxy.all_handler(req)
+    assert interceptor_called, "Interceptor was never called!"
     assert result.text == "Blocked by interceptor"
 
 
