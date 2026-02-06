@@ -1,6 +1,13 @@
 # CHANGELOG
 
 
+## v1.3.5 (2026-02-06)
+
+### Bug Fixes
+
+* fix: header duplication & JSON parsing (#37) ([`40d1d2e`](https://github.com/alandtse/auth_capture_proxy/commit/40d1d2eea1e2d9f1e772076d4730b7078bad5c14))
+
+
 ## v1.3.4 (2026-01-31)
 
 ### Bug Fixes
