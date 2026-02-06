@@ -3,16 +3,15 @@
 import asyncio
 import logging
 import re
+from json import JSONDecodeError
 from functools import partial
 from ssl import SSLContext, create_default_context
-from typing import Any, Callable, Dict, List, Optional, Text, Tuple, Union
+from typing import Any, Callable, Dict, List, Optional, Set, Text, Tuple, Union
 
 import httpx
 from aiohttp import (
-    ClientConnectionError,
     MultipartReader,
     MultipartWriter,
-    TooManyRedirects,
     hdrs,
     web,
 )
@@ -47,8 +46,7 @@ class AuthCaptureProxy:
     This class relies on tests to be provided to indicate the proxy has completed. At proxy completion all data can be found in self.session, self.data, and self.query.
     """
 
-    def __init__(
-        self,
+    def __init__(self,
         proxy_url: URL,
         host_url: URL,
         session: Optional[httpx.AsyncClient] = None,
@@ -58,7 +56,10 @@ class AuthCaptureProxy:
         """Initialize proxy object.
 
         Args:
-            proxy_url (URL): url for proxy location. e.g., http://192.168.1.1/. If there is any path, the path is considered part of the base url. If no explicit port is specified, a random port will be generated. If https is passed in, ssl_context must be provided at start_proxy() or the url will be downgraded to http.
+            proxy_url (URL): url for proxy location. e.g., http://192.168.1.1/.
+                If there is any path, the path is considered part of the base url.
+                If no explicit port is specified, a random port will be generated.
+                If https is passed in, ssl_context must be provided at start_proxy() or the url will be downgraded to http.
             host_url (URL): original url for login, e.g., http://amazon.com
             session (httpx.AsyncClient): httpx client to make queries. Optional
             session_factory (lambda: httpx.AsyncClient): factory to create the aforementioned httpx client if having one fixed session is insufficient.
@@ -102,6 +103,7 @@ class AuthCaptureProxy:
         self.redirect_filters: Dict[Text, List[Text]] = {
             "url": []
         }  # dictionary of lists of regex strings to filter against
+        self._background_tasks: Set[asyncio.Task] = set()
 
     @property
     def active(self) -> bool:
@@ -146,7 +148,7 @@ class AuthCaptureProxy:
     def modifiers(self) -> Dict[Text, Union[Callable, Dict[Text, Callable]]]:
         """Return modifiers setting.
 
-        :setter: value (Dict[Text, Dict[Text, Callable]): A nested dictionary of modifiers. The key shoud be a MIME type and the value should be a dictionary of modifiers for that MIME type where the key should be the name of the modifier and the value should be a function or couroutine that takes a string and returns a modified string. If parameters are necessary, functools.partial should be used. See :mod:`authcaptureproxy.examples.modifiers` for examples.
+        :setter: value (Dict[Text, Dict[Text, Callable]): A nested dictionary of modifiers. The key should be a MIME type and the value should be a dictionary of modifiers for that MIME type where the key should be the name of the modifier and the value should be a function or coroutine that takes a string and returns a modified string. If parameters are necessary, functools.partial should be used. See :mod:`authcaptureproxy.examples.modifiers` for examples.
         """
         return self._modifiers
 
@@ -284,7 +286,7 @@ class AuthCaptureProxy:
     async def all_handler(self, request: web.Request, **kwargs) -> web.Response:
         """Handle all requests.
 
-        This handler will exit on succesful test found in self.tests or if a /stop url is seen. This handler can be used with any aiohttp webserver and disabled after registered using self.all_handler_active.
+        This handler will exit on successful test found in self.tests or if a /stop url is seen. This handler can be used with any aiohttp webserver and disabled after registered using self.all_haandler_active.
 
         Args
             request (web.Request): The request to process
@@ -324,16 +326,27 @@ class AuthCaptureProxy:
                     break
                 if isinstance(part, MultipartReader):
                     await _process_multipart(part, writer)
-                elif part.headers.get("hdrs.CONTENT_TYPE"):
-                    if part.headers[hdrs.CONTENT_TYPE] == "application/json":
-                        part_data: Optional[
-                            Union[Text, Dict[Text, Any], List[Tuple[Text, Text]], bytes]
-                        ] = await part.json()
-                        writer.append_json(part_data)
-                    elif part.headers[hdrs.CONTENT_TYPE].startswith("text"):
+                elif hdrs.CONTENT_TYPE in part.headers:
+                    content_type = part.headers.get(hdrs.CONTENT_TYPE, "")
+                    mime_type = content_type.split(";", 1)[0].strip()
+                    if mime_type == "application/json":
+                        try:
+                            part_data: Optional[
+                                Union[Text, Dict[Text, Any], List[Tuple[Text, Text]], bytes]
+                            ] = await part.json()
+                            writer.append_json(part_data)
+                        except Exception:
+                            # Best-effort fallback: text, then bytes
+                            try:
+                                part_text = await part.text()
+                                writer.append(part_text)
+                            except Exception:
+                                part_data = await part.read()
+                                writer.append(part_data)
+                    elif mime_type.startswith("text"):
                         part_data = await part.text()
                         writer.append(part_data)
-                    elif part.headers[hdrs.CONTENT_TYPE] == "application/www-urlform-encode":
+                    elif mime_type == "application/x-www-form-urlencoded":
                         part_data = await part.form()
                         writer.append_form(part_data)
                     else:
@@ -390,8 +403,15 @@ class AuthCaptureProxy:
         else:
             data = convert_multidict_to_dict(await request.post())
         json_data = None
-        if request.has_body:
-            json_data = await request.json()
+        # Only attempt JSON decoding for JSON requests; avoid raising for form posts.
+        if request.has_body and (
+            request.content_type == "application/json"
+            or request.content_type.endswith("+json")
+        ):
+            try:
+                json_data = await request.json()
+            except (JSONDecodeError, ValueError):
+                json_data = None
         if data:
             self.data.update(data)
             _LOGGER.debug("Storing data %s", data)
@@ -403,7 +423,9 @@ class AuthCaptureProxy:
         ):
             self.all_handler_active = False
             if self.active:
-                asyncio.create_task(self.stop_proxy(3))
+                task = asyncio.create_task(self.stop_proxy(3))
+                self._background_tasks.add(task)
+                task.add_done_callback(self._background_tasks.discard)
             return await self._build_response(text="Proxy stopped.")
         elif (
             URL(str(request.url)).path
@@ -434,41 +456,43 @@ class AuthCaptureProxy:
             if skip_auto_headers:
                 _LOGGER.debug("Discovered skip_auto_headers %s", skip_auto_headers)
                 headers.pop(SKIP_AUTO_HEADERS)
+            # Avoid accidental header mutation across branches/calls
+            req_headers: dict[str, Any] = dict(headers)
             _LOGGER.debug(
                 "Attempting %s to %s\nheaders: %s \ncookies: %s",
                 method,
                 site,
-                headers,
+                req_headers,
                 self.session.cookies.jar,
             )
             try:
                 if mpwriter:
                     resp = await getattr(self.session, method)(
-                        site, data=mpwriter, headers=headers, follow_redirects=True
+                        site, data=mpwriter, headers=req_headers, follow_redirects=True
                     )
                 elif data:
                     resp = await getattr(self.session, method)(
-                        site, data=data, headers=headers, follow_redirects=True
+                        site, data=data, headers=req_headers, follow_redirects=True
                     )
                 elif json_data:
                     for item in ["Host", "Origin", "User-Agent", "dnt", "Accept-Encoding"]:
                         # remove proxy headers
-                        if headers.get(item):
-                            headers.pop(item)
+                        if req_headers.get(item):
+                            req_headers.pop(item)
                     resp = await getattr(self.session, method)(
-                        site, json=json_data, headers=headers, follow_redirects=True
+                        site, json=json_data, headers=req_headers, follow_redirects=True
                     )
                 else:
                     resp = await getattr(self.session, method)(
-                        site, headers=headers, follow_redirects=True
+                        site, headers=req_headers, follow_redirects=True
                     )
-            except ClientConnectionError as ex:
+            except httpx.ConnectError as ex:
                 return await self._build_response(
                     text=f"Error connecting to {site}; please retry: {ex}"
                 )
-            except TooManyRedirects as ex:
+            except httpx.TooManyRedirects as ex:
                 return await self._build_response(
-                    text=f"Error connecting to {site}; too may redirects: {ex}"
+                    text=f"Error connecting to {site}; too many redirects: {ex}"
                 )
             except httpx.TimeoutException as ex:
                 _LOGGER.warning(
@@ -483,6 +507,10 @@ class AuthCaptureProxy:
                         "Please retry, or check DNS resolution, firewall rules, proxy/VPN settings, "
                         "and that the service endpoint is reachable from this host."
                     )
+                )
+            except httpx.HTTPError as ex:
+                return await self._build_response(
+                    text=f"Error connecting to {site}: {ex}"
                 )
         if resp is None:
             return await self._build_response(text=f"Error connecting to {site}; please retry")
@@ -621,8 +649,7 @@ class AuthCaptureProxy:
         """
         host_string: Text = str(self._host_url.with_path("/"))
         proxy_string: Text = str(
-            self.access_url() if not domain_only else self.access_url().with_path("/")
-        )
+            self.access_url() if not domain_only else self.access_url().with_path("/"))
         if str(self.access_url().with_path("/")).replace("https", "http") in text:
             _LOGGER.debug(
                 "Replacing %s with %s",
