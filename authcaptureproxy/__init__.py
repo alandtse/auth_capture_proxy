@@ -17,6 +17,7 @@ from authcaptureproxy import const
 from authcaptureproxy.auth_capture_proxy import AuthCaptureProxy
 from authcaptureproxy.examples.modifiers import find_regex_urls
 from authcaptureproxy.helper import prepend_url, swap_url
+from authcaptureproxy.interceptor import BaseInterceptor, InterceptContext
 from authcaptureproxy.stackoverflow import return_timer_countdown_refresh_html
 
 pkg = Path(__file__).absolute().parent.name
@@ -47,6 +48,8 @@ if __name__ == "__main__":  # pragma: no cover
 
 __all__ = [
     "AuthCaptureProxy",
+    "BaseInterceptor",
+    "InterceptContext",
     "const",
     "return_timer_countdown_refresh_html",
     "find_regex_urls",

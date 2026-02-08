@@ -2,6 +2,7 @@
 """Python Package for auth capture proxy."""
 import asyncio
 import logging
+import posixpath
 import re
 from json import JSONDecodeError
 from functools import partial
@@ -19,6 +20,7 @@ from multidict import CIMultiDict
 from yarl import URL
 
 from authcaptureproxy.const import SKIP_AUTO_HEADERS
+from authcaptureproxy.interceptor import BaseInterceptor, InterceptContext
 from authcaptureproxy.examples.modifiers import (
     prepend_relative_urls,
     replace_empty_action_urls,
@@ -56,26 +58,15 @@ class AuthCaptureProxy:
         """Initialize proxy object.
 
         Args:
-            proxy_url (URL): url for proxy location. e.g., http://192.168.1.1/.
-                If there is any path, the path is considered part of the base url.
-                If no explicit port is specified, a random port will be generated.
-                If https is passed in, ssl_context must be provided at start_proxy() or the url will be downgraded to http.
-            host_url (URL): original url for login, e.g., http://amazon.com
+            proxy_url (URL): url for proxy location. e.g., http://192.168.1.1/. If there is any path, the path is considered part of the base url. If no explicit port is specified, a random port will be generated. If https is passed in, ssl_context must be provided at start_proxy() or the url will be downgraded to http.
+            host_url (URL): original url for login, e.g., http://example.com
             session (httpx.AsyncClient): httpx client to make queries. Optional
             session_factory (lambda: httpx.AsyncClient): factory to create the aforementioned httpx client if having one fixed session is insufficient.
             preserve_headers (bool): Whether to preserve headers from the backend. Useful in circumventing CSRF protection. Defaults to False.
         """
         self._preserve_headers = preserve_headers
         self.session_factory: Callable[[], httpx.AsyncClient] = session_factory or (
-            lambda: httpx.AsyncClient(
-                verify=ssl_context,
-                timeout=httpx.Timeout(
-                    connect=10.0,
-                    read=30.0,
-                    write=10.0,
-                    pool=10.0,
-                ),
-            )
+            lambda: httpx.AsyncClient(verify=ssl_context)
         )
         self.session: httpx.AsyncClient = session if session else self.session_factory()
         self._proxy_url: URL = proxy_url
@@ -104,6 +95,24 @@ class AuthCaptureProxy:
             "url": []
         }  # dictionary of lists of regex strings to filter against
         self._background_tasks: Set[asyncio.Task] = set()
+        self._interceptors: List[BaseInterceptor] = []
+
+    @property
+    def interceptors(self) -> List[BaseInterceptor]:
+        """Return interceptors list.
+
+        :setter: value (List[BaseInterceptor]): A list of interceptors to run during request processing. See :mod:`authcaptureproxy.examples.amazon_waf` for an example.
+        """
+        return self._interceptors
+
+    @interceptors.setter
+    def interceptors(self, value: List[BaseInterceptor]) -> None:
+        """Set interceptors.
+
+        Args:
+            value (List[BaseInterceptor]): A list of interceptors.
+        """
+        self._interceptors = value
 
     @property
     def active(self) -> bool:
@@ -173,7 +182,7 @@ class AuthCaptureProxy:
         This will also reset all stored data.
 
         Args:
-            new_url (URL): original url for login, e.g., http://amazon.com
+            new_url (URL): original url for login, e.g., http://example.com
         """
         if not isinstance(new_url, URL):
             raise ValueError("URL required")
@@ -244,6 +253,23 @@ class AuthCaptureProxy:
             refreshed_modifers = get_nested_dict_keys(self.modifiers)
             _LOGGER.debug("Refreshed %s modifiers: %s", len(refreshed_modifers), refreshed_modifers)
 
+    @staticmethod
+    def _filter_ajax_headers(resp: httpx.Response) -> dict:
+        """Filter headers for AJAX responses, removing hop-by-hop and CSP headers."""
+        _skip_headers = {
+            "content-type", "content-length", "content-encoding",
+            "transfer-encoding", "connection",
+            "x-connection-hash",
+            "content-security-policy",
+            "content-security-policy-report-only",
+        }
+        filtered = {}
+        for k, v in resp.headers.items():
+            if k.lower() not in _skip_headers:
+                filtered[k] = v
+        filtered["Cache-Control"] = "no-cache, no-store, must-revalidate"
+        return filtered
+
     async def _build_response(
         self, response: Optional[httpx.Response] = None, *args, **kwargs
     ) -> web.Response:
@@ -287,6 +313,9 @@ class AuthCaptureProxy:
         """Handle all requests.
 
         This handler will exit on successful test found in self.tests or if a /stop url is seen. This handler can be used with any aiohttp webserver and disabled after registered using self.all_haandler_active.
+
+        The handler supports an interceptor pipeline for extending behavior
+        without modifying core proxy code. See :class:`BaseInterceptor`.
 
         Args
             request (web.Request): The request to process
@@ -335,12 +364,12 @@ class AuthCaptureProxy:
                                 Union[Text, Dict[Text, Any], List[Tuple[Text, Text]], bytes]
                             ] = await part.json()
                             writer.append_json(part_data)
-                        except Exception:
+                        except (JSONDecodeError, ValueError, TypeError):
                             # Best-effort fallback: text, then bytes
                             try:
                                 part_text = await part.text()
                                 writer.append(part_text)
-                            except Exception:
+                            except (UnicodeDecodeError, ValueError):
                                 part_data = await part.read()
                                 writer.append(part_data)
                     elif mime_type.startswith("text"):
@@ -364,42 +393,72 @@ class AuthCaptureProxy:
         if not self.all_handler_active:
             _LOGGER.debug("%s all_handler is disabled; returning 404.", self)
             raise web.HTTPNotFound()
-        # if not self.session:
-        #     self.session = httpx.AsyncClient()
         method = request.method.lower()
         _LOGGER.debug("Received %s: %s for %s", method, str(request.url), host_url)
         resp: Optional[httpx.Response] = None
-        old_url: URL = (
-            access_url.with_host(request.url.host)
-            if request.url.host and request.url.host != access_url.host
-            else access_url
+        # Create interceptor context for the request pipeline
+        ctx = InterceptContext(
+            request=request,
+            proxy=self,
+            access_url=access_url,
+            host_url=host_url,
+            method=method,
         )
-        if request.scheme == "http" and access_url.scheme == "https":
-            # detect reverse proxy downgrade
-            _LOGGER.debug("Detected http while should be https; switching to https")
-            site: str = str(
-                swap_url(
-                    ignore_query=True,
-                    old_url=old_url.with_scheme("https"),
-                    new_url=host_url.with_path("/"),
-                    url=URL(str(request.url)).with_scheme("https"),
-                ),
-            )
+        # Run on_request interceptors (can set ctx.site for custom URL routing)
+        for interceptor in self._interceptors:
+            await interceptor.on_request(ctx)
+            if ctx.short_circuit:
+                return ctx.short_circuit
+        if ctx.site:
+            # Interceptor set the target URL (e.g., multi-host routing)
+            site = ctx.site
         else:
-            site = str(
-                swap_url(
-                    ignore_query=True,
-                    old_url=old_url,
-                    new_url=host_url.with_path("/"),
-                    url=URL(str(request.url)),
-                ),
+            # Generic URL resolution
+            old_url: URL = (
+                access_url.with_host(request.url.host)
+                if request.url.host and request.url.host != access_url.host
+                else access_url
             )
+            if request.scheme == "http" and access_url.scheme == "https":
+                _LOGGER.debug("Detected http while should be https; switching to https")
+                site = str(
+                    swap_url(
+                        ignore_query=True,
+                        old_url=old_url.with_scheme("https"),
+                        new_url=host_url.with_path("/"),
+                        url=URL(str(request.url)).with_scheme("https"),
+                    ),
+                )
+            else:
+                site = str(
+                    swap_url(
+                        ignore_query=True,
+                        old_url=old_url,
+                        new_url=host_url.with_path("/"),
+                        url=URL(str(request.url)),
+                    ),
+                )
         self.query.update(request.query)
         data: Optional[Dict] = None
+        raw_body: Optional[bytes] = None
         mpwriter = None
         if request.content_type == "multipart/form-data":
             mpwriter = MultipartWriter()
             await _process_multipart(await request.multipart(), mpwriter)
+        elif (
+            request.has_body
+            and request.content_type
+            and "x-www-form-urlencoded" not in request.content_type
+            and "json" not in request.content_type
+        ):
+            # Raw body (text/plain, binary, etc.) - forward as-is.
+            raw_body = await request.read()
+            _LOGGER.debug(
+                "Read raw body (%s bytes, type=%s) for %s",
+                len(raw_body) if raw_body else 0,
+                request.content_type,
+                site,
+            )
         else:
             data = convert_multidict_to_dict(await request.post())
         json_data = None
@@ -415,6 +474,15 @@ class AuthCaptureProxy:
         if data:
             self.data.update(data)
             _LOGGER.debug("Storing data %s", data)
+            # Run on_request_data interceptors (can modify data before HTTP request)
+            ctx.site = site
+            ctx.data = data
+            ctx.json_data = json_data
+            for interceptor in self._interceptors:
+                await interceptor.on_request_data(ctx)
+                if ctx.short_circuit:
+                    return ctx.short_circuit
+            data = ctx.data
         elif json_data:
             self.data.update(json_data)
             _LOGGER.debug("Storing json %s", json_data)
@@ -474,6 +542,19 @@ class AuthCaptureProxy:
                     resp = await getattr(self.session, method)(
                         site, data=data, headers=req_headers, follow_redirects=True
                     )
+                elif raw_body is not None:
+                    _LOGGER.debug(
+                        "Sending raw body (%s bytes, Content-Type: %s) to %s",
+                        len(raw_body),
+                        request.content_type,
+                        site,
+                    )
+                    # Preserve the original Content-Type for raw body requests
+                    if request.content_type and "Content-Type" not in req_headers:
+                        req_headers["Content-Type"] = request.content_type
+                    resp = await getattr(self.session, method)(
+                        site, content=raw_body, headers=req_headers, follow_redirects=True
+                    )
                 elif json_data:
                     for item in ["Host", "Origin", "User-Agent", "dnt", "Accept-Encoding"]:
                         # remove proxy headers
@@ -496,15 +577,12 @@ class AuthCaptureProxy:
                 )
             except httpx.TimeoutException as ex:
                 _LOGGER.warning(
-                    "Timeout during proxy request to %s: %s",
-                    site,
-                    ex.__class__.__name__,
+                    "Timeout connecting to %s: %s", site, ex
                 )
                 return await self._build_response(
                     text=(
-                        "Timed out while contacting the service during login.\n\n"
-                        "This is usually caused by slow or blocked network access. "
-                        "Please retry, or check DNS resolution, firewall rules, proxy/VPN settings, "
+                        f"Timeout connecting to {site}: {ex}. "
+                        "Please try again. If this persists, check your network "
                         "and that the service endpoint is reachable from this host."
                     )
                 )
@@ -516,6 +594,13 @@ class AuthCaptureProxy:
             return await self._build_response(text=f"Error connecting to {site}; please retry")
         self.last_resp = resp
         print_resp(resp)
+        # Run on_response interceptors (post-response, pre-tests)
+        ctx.response = resp
+        ctx.site = site
+        for interceptor in self._interceptors:
+            await interceptor.on_response(ctx)
+            if ctx.short_circuit:
+                return ctx.short_circuit
         self.check_redirects()
         self.refresh_tests()
         if self.tests:
@@ -538,6 +623,57 @@ class AuthCaptureProxy:
         else:
             _LOGGER.warning("Proxy has no tests; please set.")
         content_type = get_content_type(resp)
+        # Detect AJAX requests using Fetch Metadata headers (W3C standard).
+        # Sec-Fetch-Mode is set by the browser and cannot be spoofed by JS.
+        # 'navigate' = top-level page navigation; anything else = AJAX/subresource.
+        # Fall back to Upgrade-Insecure-Requests for older clients.
+        _sec_fetch_mode = request.headers.get("Sec-Fetch-Mode")
+        if _sec_fetch_mode is not None:
+            _is_ajax = _sec_fetch_mode != "navigate"
+        else:
+            # Legacy fallback for clients without Sec-Fetch-Mode
+            _is_ajax = request.headers.get("Upgrade-Insecure-Requests") != "1"
+        if _is_ajax:
+            _LOGGER.debug(
+                "AJAX response for %s: status=%s, content_type=%s",
+                URL(str(request.url)).path,
+                resp.status_code,
+                content_type,
+            )
+        if _is_ajax and content_type == "text/html":
+            _ajax_body = resp.content
+            # Run on_ajax_html interceptors (can modify AJAX HTML body)
+            ctx.is_ajax = True
+            ctx.content_type = content_type
+            ctx.body = _ajax_body
+            for interceptor in self._interceptors:
+                await interceptor.on_ajax_html(ctx)
+            _ajax_body = ctx.body if ctx.body is not None else _ajax_body
+            _LOGGER.debug(
+                "AJAX HTML response for %s - skipping modifiers",
+                URL(str(request.url)).path,
+            )
+            # Forward original headers for AJAX responses.
+            # Client-side JavaScript may check response headers (e.g., for CAPTCHA
+            # initialization). Without them, it may fail silently.
+            _ajax_headers = self._filter_ajax_headers(resp) if resp is not None else {}
+            return await self._build_response(
+                resp, body=_ajax_body, content_type=content_type,
+                headers=_ajax_headers,
+            )
+        # Also skip modifiers for non-HTML AJAX responses (JSON, binary, etc.)
+        if _is_ajax and content_type != "text/html":
+            _LOGGER.debug(
+                "AJAX non-HTML response (%s) for %s - skipping modifiers",
+                content_type,
+                URL(str(request.url)).path,
+            )
+            _resp_body = resp.content
+            _ajax_headers_nh = self._filter_ajax_headers(resp) if resp is not None else {}
+            return await self._build_response(
+                resp, body=_resp_body, content_type=content_type,
+                headers=_ajax_headers_nh,
+            )
         self.refresh_modifiers(URL(str(resp.url)))
         if self.modifiers:
             modified: bool = False
@@ -549,6 +685,55 @@ class AuthCaptureProxy:
                 text = resp.text
             if not isinstance(text, str):  # process aiohttp text
                 text = await resp.text()
+            # Resolve relative form actions BEFORE modifiers run.
+            if text and content_type == "text/html" and resp and resp.url:
+                _resp_url = URL(str(resp.url))
+                _resp_dir = _resp_url.path.rsplit("/", 1)[0] + "/" if "/" in _resp_url.path else "/"
+
+                def _resolve_form_action(form_match):
+                    """Resolve relative action URLs only inside <form> tags."""
+                    form_tag = form_match.group(0)
+                    action_m = re.search(
+                        r'(\s+action=["\'])([^"\']*?)(["\'])', form_tag
+                    )
+                    if not action_m:
+                        return form_tag
+                    action = action_m.group(2)
+                    if action and not action.startswith(
+                        ("http://", "https://", "//", "#", "javascript:", "/")
+                    ):
+                        resolved_path = posixpath.normpath(_resp_dir + action)
+                        _proxy_base = self.access_url().path.rstrip("/")
+                        abs_url = str(
+                            self.access_url().with_path(
+                                _proxy_base + resolved_path
+                            ).with_query({})
+                        )
+                        _LOGGER.debug(
+                            "Resolved relative form action '%s' -> '%s' (page: %s)",
+                            action, abs_url, _resp_url.path,
+                        )
+                        return (
+                            form_tag[: action_m.start(2)]
+                            + abs_url
+                            + form_tag[action_m.end(2) :]
+                        )
+                    return form_tag
+
+                text = re.sub(
+                    r'<form\b[^>]*>',
+                    _resolve_form_action,
+                    text,
+                    flags=re.IGNORECASE,
+                )
+            # Run on_page_html interceptors (can inject scripts before modifiers)
+            if text and content_type == "text/html":
+                ctx.text = text
+                ctx.content_type = content_type
+                ctx.is_ajax = False
+                for interceptor in self._interceptors:
+                    await interceptor.on_page_html(ctx)
+                text = ctx.text if ctx.text is not None else text
             if text:
                 for name, modifier in self.modifiers.items():
                     if isinstance(modifier, dict):
@@ -568,7 +753,6 @@ class AuthCaptureProxy:
                                 modified = True
                             except TypeError as ex:
                                 _LOGGER.warning("Modifier %s is not callable: %s", name, ex)
-                # _LOGGER.debug("Returning modified text:\n%s", text)
             if modified:
                 return await self._build_response(
                     resp,
@@ -699,7 +883,9 @@ class AuthCaptureProxy:
         if result.get("Host"):
             result.pop("Host")
         if result.get("Origin"):
-            result["Origin"] = f"{site.with_path('')}"
+            # Use the configured host URL as Origin for cross-origin requests.
+            # Third-party services may validate Origin against the page that loaded them.
+            result["Origin"] = f"{self._host_url.with_path('')}"
         # remove any cookies in header received from browser. If not removed, httpx will not send session cookies
         if result.get("Cookie"):
             result.pop("Cookie")
