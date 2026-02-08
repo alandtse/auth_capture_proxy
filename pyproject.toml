@@ -92,7 +92,7 @@ httpx = "*"
 #homeassistant = { git = "https://github.com/home-assistant/core.git", branch = "dev" }
 
 
-[tool.poetry.dev-dependencies]
+[tool.poetry.group.dev.dependencies]
 # TODO Remove build dependencies you don't want (like xdoctest, perhaps)
 # These are dependencies that Poetry uses only when testing
 # They all are included as dependencies in tox.ini
