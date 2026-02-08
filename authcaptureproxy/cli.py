@@ -7,7 +7,7 @@ import asyncio
 import datetime
 import json
 import logging
-import sys
+import signal
 import time
 from functools import partial, wraps
 from typing import Any, Dict, Text
@@ -107,6 +107,20 @@ async def proxy_example(
             return f"Successfully logged in {data.get('email')} and {data.get('password')}. Please close the window.<br /><b>Post data</b><br />{json.dumps(data)}<br /><b>Query Data:</b><br />{json.dumps(query)}<br /><b>Cookies:</b></br>{json.dumps(list(proxy_obj.session.cookies.items()))}"
 
     await proxy_obj.start_proxy()
+    loop = asyncio.get_running_loop()
+    stop_task: asyncio.Task | None = None
+
+    def _schedule_stop() -> None:
+        nonlocal stop_task
+        if stop_task is None or stop_task.done():
+            stop_task = asyncio.create_task(proxy_obj.stop_proxy())
+
+    for sig in (signal.SIGINT, signal.SIGTERM):
+        try:
+            loop.add_signal_handler(sig, _schedule_stop)
+        except NotImplementedError:
+            # add_signal_handler may not be available (e.g., Windows)
+            pass
     try:
         # add tests and modifiers after the proxy has started so that port data is available for self.access_url()
         # add tests. See :mod:`authcaptureproxy.examples.testers`.
@@ -143,7 +157,14 @@ async def proxy_example(
         typer.echo("Proxy completed; exiting")
         raise typer.Exit()
     finally:
-        await asyncio.shield(proxy_obj.stop_proxy())
+        for sig in (signal.SIGINT, signal.SIGTERM):
+            try:
+                loop.remove_signal_handler(sig)
+            except NotImplementedError:
+                pass
+        _schedule_stop()
+        if stop_task is not None:
+            await asyncio.shield(stop_task)
 
 
 if __name__ == "__main__":
