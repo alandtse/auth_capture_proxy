@@ -407,7 +407,7 @@ class AuthCaptureProxy:
         # Run on_request interceptors (can set ctx.site for custom URL routing)
         for interceptor in self._interceptors:
             await interceptor.on_request(ctx)
-            if ctx.short_circuit:
+            if ctx.short_circuit is not None:
                 return ctx.short_circuit
         if ctx.site:
             # Interceptor set the target URL (e.g., multi-host routing)
@@ -480,7 +480,7 @@ class AuthCaptureProxy:
             ctx.json_data = json_data
             for interceptor in self._interceptors:
                 await interceptor.on_request_data(ctx)
-                if ctx.short_circuit:
+                if ctx.short_circuit is not None:
                     return ctx.short_circuit
             data = ctx.data
         elif json_data:
@@ -599,7 +599,7 @@ class AuthCaptureProxy:
         ctx.site = site
         for interceptor in self._interceptors:
             await interceptor.on_response(ctx)
-            if ctx.short_circuit:
+            if ctx.short_circuit is not None:
                 return ctx.short_circuit
         self.check_redirects()
         self.refresh_tests()
