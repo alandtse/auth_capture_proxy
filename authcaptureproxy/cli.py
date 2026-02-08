@@ -107,40 +107,43 @@ async def proxy_example(
             return f"Successfully logged in {data.get('email')} and {data.get('password')}. Please close the window.<br /><b>Post data</b><br />{json.dumps(data)}<br /><b>Query Data:</b><br />{json.dumps(query)}<br /><b>Cookies:</b></br>{json.dumps(list(proxy_obj.session.cookies.items()))}"
 
     await proxy_obj.start_proxy()
-    # add tests and modifiers after the proxy has started so that port data is available for self.access_url()
-    # add tests. See :mod:`authcaptureproxy.examples.testers`.
-    proxy_obj.tests = {"test_url": test_url}
+    try:
+        # add tests and modifiers after the proxy has started so that port data is available for self.access_url()
+        # add tests. See :mod:`authcaptureproxy.examples.testers`.
+        proxy_obj.tests = {"test_url": test_url}
 
-    # add modifiers like autofill to manipulate html returned to browser. See :mod:`authcaptureproxy.examples.modifiers`.
-    # this will add to any default modifiers
-    proxy_obj.modifiers.update(
-        {
-            "text/html": {
-                "autofill": partial(
-                    autofill,
-                    {
-                        "password": "CHANGEME",
-                    },
-                )
+        # add modifiers like autofill to manipulate html returned to browser. See :mod:`authcaptureproxy.examples.modifiers`.
+        # this will add to any default modifiers
+        proxy_obj.modifiers.update(
+            {
+                "text/html": {
+                    "autofill": partial(
+                        autofill,
+                        {
+                            "password": "CHANGEME",
+                        },
+                    )
+                }
             }
-        }
-    )
-    # add filter to redirect check. Filter out all urls from redirect check.
-    proxy_obj.redirect_filters = {"url": ["^.*$"]}
+        )
+        # add filter to redirect check. Filter out all urls from redirect check.
+        proxy_obj.redirect_filters = {"url": ["^.*$"]}
 
-    # connect to proxy at proxy.access_url() and sign in
-    typer.echo(
-        f"Launching browser to connect to proxy at {proxy_obj.access_url()} and sign in using logged-out account."
-    )
-    typer.launch(str(proxy_obj.access_url()))
-    typer.echo(f"Proxy will timeout and close in {datetime.timedelta(seconds=timeout)}.")
-    asyncio.create_task(proxy_obj.stop_proxy(timeout))
-    # or stop the proxy when done manually
-    while proxy_obj.active:
-        # loop until proxy done
-        await asyncio.sleep(1)
-    typer.echo("Proxy completed; exiting")
-    raise typer.Exit()
+        # connect to proxy at proxy.access_url() and sign in
+        typer.echo(
+            f"Launching browser to connect to proxy at {proxy_obj.access_url()} and sign in using logged-out account."
+        )
+        typer.launch(str(proxy_obj.access_url()))
+        typer.echo(f"Proxy will timeout and close in {datetime.timedelta(seconds=timeout)}.")
+        asyncio.create_task(proxy_obj.stop_proxy(timeout))
+        # or stop the proxy when done manually
+        while proxy_obj.active:
+            # loop until proxy done
+            await asyncio.sleep(1)
+        typer.echo("Proxy completed; exiting")
+        raise typer.Exit()
+    finally:
+        await asyncio.shield(proxy_obj.stop_proxy())
 
 
 if __name__ == "__main__":
