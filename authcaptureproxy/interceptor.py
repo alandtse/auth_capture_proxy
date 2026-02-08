@@ -4,7 +4,7 @@ Python Package for auth capture proxy.
 
 Interceptor base classes for extending the proxy pipeline.
 """
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any, Dict, Optional, Text
 
 import httpx
