@@ -14,7 +14,6 @@ import base64
 import json as _json
 import logging
 import re
-from typing import Optional
 
 from yarl import URL
 
@@ -118,7 +117,7 @@ class AmazonWAFInterceptor(BaseInterceptor):
                     _decoded_token = base64.urlsafe_b64decode(_padded)
                     _json.loads(_decoded_token)
                     _aam_token_valid = True
-                except (ValueError, Exception):
+                except Exception:  # nosec B110
                     pass
             if _aam_token_valid:
                 _LOGGER.debug(

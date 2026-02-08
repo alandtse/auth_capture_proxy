@@ -151,7 +151,7 @@ async def find_regex_urls(
         for url_string in s:
             new_url: URL = await run_func(modifier, name="", url=URL(url_string))
             _LOGGER.debug("Replacing %s -> %s", url_string, str(new_url))
-            html = re.sub(re.escape(url_string), str(new_url), html, re.IGNORECASE)
+            html = re.sub(re.escape(url_string), str(new_url), html, count=0, flags=re.IGNORECASE)
     return html
 
 

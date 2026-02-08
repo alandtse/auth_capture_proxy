@@ -10,7 +10,7 @@ from multidict import CIMultiDict
 from yarl import URL
 
 from authcaptureproxy import AuthCaptureProxy
-from authcaptureproxy.interceptor import BaseInterceptor, InterceptContext
+from authcaptureproxy.interceptor import BaseInterceptor
 
 HOST_URL = URL("https://www.host.com")
 PROXY_URL = URL("https://www.proxy.com/proxy")

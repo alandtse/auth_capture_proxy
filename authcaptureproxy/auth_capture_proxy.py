@@ -368,7 +368,7 @@ class AuthCaptureProxy:
                             try:
                                 part_text = await part.text()
                                 writer.append(part_text)
-                            except (UnicodeDecodeError, ValueError):
+                            except ValueError:
                                 part_data = await part.read()
                                 writer.append(part_data)
                     elif mime_type.startswith("text"):
