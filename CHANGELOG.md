@@ -1,6 +1,17 @@
 # CHANGELOG
 
 
+## v1.3.6 (2026-02-08)
+
+### Bug Fixes
+
+* fix: support Amazon WAF aamation captcha challenge (#38) ([`e51c8e7`](https://github.com/alandtse/auth_capture_proxy/commit/e51c8e7900cec55219f39f96a296b43387c8e713))
+
+### Build System
+
+* build: fix tox failures (#40) ([`fde79b1`](https://github.com/alandtse/auth_capture_proxy/commit/fde79b17940bac1ff64ec45e91d5385be5208772))
+
+
 ## v1.3.5 (2026-02-06)
 
 ### Bug Fixes
