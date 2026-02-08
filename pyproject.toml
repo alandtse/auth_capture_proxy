@@ -89,6 +89,7 @@ multidict = "^6"
 yarl = "^1"
 beautifulsoup4 = "^4"
 httpx = "*"
+setuptools = ">=68"
 #homeassistant = { git = "https://github.com/home-assistant/core.git", branch = "dev" }
 
 

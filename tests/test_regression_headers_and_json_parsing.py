@@ -64,6 +64,10 @@ async def _make_request(
     except TypeError:
         payload = StreamReader(protocol=None, limit=2**16, loop=loop)  # type: ignore[arg-type]
 
+    # aiohttp >=3.13 does not set a protocol when initialized with None; feed_eof expects it.
+    if payload._protocol is None:  # type: ignore[attr-defined]
+        payload._protocol = type("Proto", (), {"_reading_paused": False})()
+
     if body:
         payload.feed_data(body)
     payload.feed_eof()
