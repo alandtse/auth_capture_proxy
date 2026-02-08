@@ -28,20 +28,20 @@ try:
     __status__ = "Development"
     __copyright__ = "Copyright 2021"
     __date__ = "2021-02-03"
-    __uri__ = metadata["home-page"]
-    __title__ = metadata["name"]
-    __summary__ = metadata["summary"]
-    __license__ = metadata["license"]
-    __version__ = metadata["version"]
-    __author__ = metadata["author"]
-    __maintainer__ = metadata["maintainer"]
-    __contact__ = metadata["maintainer"]
+    __uri__ = metadata.get("home-page", "")
+    __title__ = metadata.get("name", "")
+    __summary__ = metadata.get("summary", "")
+    __license__ = metadata.get("license", "")
+    __version__ = metadata.get("version", "")
+    __author__ = metadata.get("author", "")
+    __maintainer__ = metadata.get("maintainer", "")
+    __contact__ = metadata.get("maintainer", "")
 except PackageNotFoundError:  # pragma: no cover
     logger.error(f"Could not load package metadata for {pkg}. Is it installed?")
 
 if __name__ == "__main__":  # pragma: no cover
     if metadata is not None:
-        print(f"{pkg} (v{metadata['version']})")
+        print(f"{pkg} (v{metadata.get('version', '')})")
     else:
         print(f"Unknown project info for {pkg}")
 

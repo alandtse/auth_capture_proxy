@@ -7,6 +7,7 @@ import asyncio
 import datetime
 import json
 import logging
+import signal
 import sys
 import time
 from functools import partial, wraps
@@ -107,40 +108,64 @@ async def proxy_example(
             return f"Successfully logged in {data.get('email')} and {data.get('password')}. Please close the window.<br /><b>Post data</b><br />{json.dumps(data)}<br /><b>Query Data:</b><br />{json.dumps(query)}<br /><b>Cookies:</b></br>{json.dumps(list(proxy_obj.session.cookies.items()))}"
 
     await proxy_obj.start_proxy()
-    # add tests and modifiers after the proxy has started so that port data is available for self.access_url()
-    # add tests. See :mod:`authcaptureproxy.examples.testers`.
-    proxy_obj.tests = {"test_url": test_url}
+    loop = asyncio.get_running_loop()
+    stop_task: asyncio.Task | None = None
 
-    # add modifiers like autofill to manipulate html returned to browser. See :mod:`authcaptureproxy.examples.modifiers`.
-    # this will add to any default modifiers
-    proxy_obj.modifiers.update(
-        {
-            "text/html": {
-                "autofill": partial(
-                    autofill,
-                    {
-                        "password": "CHANGEME",
-                    },
-                )
+    def _schedule_stop() -> None:
+        nonlocal stop_task
+        if stop_task is None or stop_task.done():
+            stop_task = asyncio.create_task(proxy_obj.stop_proxy())
+
+    for sig in (signal.SIGINT, signal.SIGTERM):
+        try:
+            loop.add_signal_handler(sig, _schedule_stop)
+        except NotImplementedError:
+            # add_signal_handler may not be available (e.g., Windows)
+            pass
+    try:
+        # add tests and modifiers after the proxy has started so that port data is available for self.access_url()
+        # add tests. See :mod:`authcaptureproxy.examples.testers`.
+        proxy_obj.tests = {"test_url": test_url}
+
+        # add modifiers like autofill to manipulate html returned to browser. See :mod:`authcaptureproxy.examples.modifiers`.
+        # this will add to any default modifiers
+        proxy_obj.modifiers.update(
+            {
+                "text/html": {
+                    "autofill": partial(
+                        autofill,
+                        {
+                            "password": "CHANGEME",
+                        },
+                    )
+                }
             }
-        }
-    )
-    # add filter to redirect check. Filter out all urls from redirect check.
-    proxy_obj.redirect_filters = {"url": ["^.*$"]}
+        )
+        # add filter to redirect check. Filter out all urls from redirect check.
+        proxy_obj.redirect_filters = {"url": ["^.*$"]}
 
-    # connect to proxy at proxy.access_url() and sign in
-    typer.echo(
-        f"Launching browser to connect to proxy at {proxy_obj.access_url()} and sign in using logged-out account."
-    )
-    typer.launch(str(proxy_obj.access_url()))
-    typer.echo(f"Proxy will timeout and close in {datetime.timedelta(seconds=timeout)}.")
-    asyncio.create_task(proxy_obj.stop_proxy(timeout))
-    # or stop the proxy when done manually
-    while proxy_obj.active:
-        # loop until proxy done
-        await asyncio.sleep(1)
-    typer.echo("Proxy completed; exiting")
-    raise typer.Exit()
+        # connect to proxy at proxy.access_url() and sign in
+        typer.echo(
+            f"Launching browser to connect to proxy at {proxy_obj.access_url()} and sign in using logged-out account."
+        )
+        typer.launch(str(proxy_obj.access_url()))
+        typer.echo(f"Proxy will timeout and close in {datetime.timedelta(seconds=timeout)}.")
+        asyncio.create_task(proxy_obj.stop_proxy(timeout))
+        # or stop the proxy when done manually
+        while proxy_obj.active:
+            # loop until proxy done
+            await asyncio.sleep(1)
+        typer.echo("Proxy completed; exiting")
+        raise typer.Exit()
+    finally:
+        for sig in (signal.SIGINT, signal.SIGTERM):
+            try:
+                loop.remove_signal_handler(sig)
+            except NotImplementedError:
+                pass
+        _schedule_stop()
+        if stop_task is not None:
+            await asyncio.shield(stop_task)
 
 
 if __name__ == "__main__":

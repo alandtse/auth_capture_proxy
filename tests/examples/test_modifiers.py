@@ -181,7 +181,8 @@ async def test_replace_empty_action_urls():
             result = await modifiers.replace_empty_action_urls(url, form)
             old_soup = bs(form, "html.parser")
             soup = bs(result, "html.parser")
-            if old_soup.find("form", action="").get("action") is not None:
+            found = old_soup.find("form", action="")
+            if found and found.get("action") is not None:
                 assert not soup.find("form", action="")
                 assert soup.find("form", action=url)["action"] == url
 
