@@ -1,46 +1,19 @@
-[metadata]
-description-file = "README.md"
-
 [build-system]
-# https://github.com/python-poetry/poetry-core#usage
-requires = ["poetry-core"]
+requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
 
-
-#########################################################################################
-# Poetry metadata
-#########################################################################################
-
-# This is all metadata that Poetry uses directly.
-# TODO: You will want to modify this section.
-# Hopefully the defaults are good, so you only need to change the individual TODOs.
-# Note that some of these can be filled in with arguments to `tyrannosaurus new` (e.g. --keywords).
-
-[tool.poetry]
-
+[project]
 name = "authcaptureproxy"
-# This is the version of your project. Keep it up-to-date and follow semantic versioning.
-# It's used in the PyPi, wheels, Docker, and Github packages.
-# Also make sure to use exactly this version when creating a Github release,
-# but prefix a "v" to the Github release.
-# E.g. This might be "1.2.13", and the Github release will be "v1.2.13".
-# Although semantic versioning allows for build tags (metadata),
-# not all tools are compatible with it, so avoid it if you can.
 version = "1.3.6"
-
 description = "A Python project to create a proxy to capture authentication information from a webpage. This is useful to capture oauth login details without access to a third-party oauth."
-keywords = [""]
-authors = ["Alan D. Tse"]
-maintainers = ["Alan D. Tse"]
-license = "Apache-2.0"
 readme = "README.md"
-homepage = "https://github.com/alandtse/auth_capture_proxy"
-repository = "https://github.com/alandtse/auth_capture_proxy"
-documentation = "https://auth_capture_proxy.readthedocs.io"
-# Note: Poetry adds the license to the classifiers automatically
-# Development Status, license, and Python versions are kept consistent
-# by `tyrannosaurus sync`, if you choose to use that.
-# The language, intended audience, OS, environment, and topics are not.
+authors = [
+    { name = "Alan D. Tse", email = "alandtse@gmail.com" }
+]
+maintainers = [
+    { name = "Alan D. Tse", email = "alandtse@gmail.com" }
+]
+license = { text = "Apache-2.0" }
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Natural Language :: English",
@@ -52,56 +25,33 @@ classifiers = [
     "Environment :: Console",
     "Topic :: Software Development :: Libraries :: Python Modules",
 ]
-# These get packaged into the wheels
-# There are uncommon needs to read the readme, license, and/or changelog
-# in your code. For example, to read and display a "what's new" section
-# if you detect that the user is running a newer version than they were using before.
-# If you don't need this, you can remove these entries.
-# (You might also be able to package this pyproject.toml file and read metadata from it.)
-include = ["README.md", "LICENSE.txt", "CHANGELOG.md"]
+keywords = [""]
+requires-python = ">=3.10"
+dependencies = [
+    "typer>=0.3, <1.0",
+    "aiohttp>=3.0.0, <4.0.0",
+    "multidict>=6.0.0, <7.0.0",
+    "yarl>=1.0.0, <2.0.0",
+    "beautifulsoup4>=4.0.0, <5.0.0",
+    "httpx",
+]
 
-[tool.poetry.urls]
-# 'CI', 'Issues', and 'Download' seem to have special meanings
-# These all get icons on PyPi
-CI = "https://github.com/alandtse/auth_capture_proxy/actions"
-Issues = "https://github.com/alandtse/auth_capture_proxy/issues"
+[project.urls]
+Homepage = "https://github.com/alandtse/auth_capture_proxy"
+Repository = "https://github.com/alandtse/auth_capture_proxy"
+Documentation = "https://auth_capture_proxy.readthedocs.io"
+"Bug Tracker" = "https://github.com/alandtse/auth_capture_proxy/issues"
 Download = "https://pypi.org/project/authcaptureproxy/"
 
-
-#########################################################################################
-# Poetry build & dependencies
-#########################################################################################
-
-# TODO: You will want to modify this section.
-
-[tool.poetry.scripts]
-# TODO Is your code a script?
-# Set the name of the Python module followed by a colon, followed by the name of the function
+[project.scripts]
 auth_capture_proxy = "authcaptureproxy.cli:cli"
 
-[tool.poetry.dependencies]
-# TODO Add and remove dependencies here
-# These are dependencies that are included in the main package
-python = "^3.10"
-typer = ">=0.3, <1.0"
-aiohttp = "^3"
-multidict = "^6"
-yarl = "^1"
-beautifulsoup4 = "^4"
-httpx = "*"
-#homeassistant = { git = "https://github.com/home-assistant/core.git", branch = "dev" }
+[tool.poetry]
+# Legacy poetry config kept for compatibility where needed, but most should be in [project] now
+# Poetry will implicitly use [project] for most things.
+include = ["README.md", "LICENSE.txt", "CHANGELOG.md"]
 
-
-[tool.poetry.dev-dependencies]
-# TODO Remove build dependencies you don't want (like xdoctest, perhaps)
-# These are dependencies that Poetry uses only when testing
-# They all are included as dependencies in tox.ini
-# Where `dev` is from `[tool.poetry.extras]` below
-
-# All of the dependencies in this "paragraph" are needed by the default `tox.ini`
-# and Github workflows (under `.github/workflows`) that Tyrannosaurus generated.
-# If you remove them, builds will always fail unless you also modify the build pipeline.
-# Note: We don't use flake8-bandit because it appears to be unmaintained
+[tool.poetry.group.dev.dependencies]
 bandit = ">=1.7, <2.0"
 black = ">=20.8b1"
 coverage = { extras = ["toml"], version = "^5" }
@@ -117,15 +67,7 @@ sphinx-autoapi = ">=1"
 sphinx-copybutton = ">=0.3.1"
 sphinx-rtd-theme = ">=0.5"
 tomlkit = ">=0.7"
-
-# These are used directly in the default build pipeline
-# ... but they're generally optional, and the build won't fail if you remove them
-# For example, `mypy` is called in `tox.ini`, but if it's removed then the line
-# will fail without causing the build to fail.
 mypy = ">=0.790, <1.0"
-
-# These are useful but are not used directly in the default build pipeline
-# that Tyrannosaurus set up for your project
 hypothesis = "^6"
 xdoctest = ">=0.15, <1.0"
 python-semantic-release = "^9"
@@ -136,134 +78,40 @@ tox-poetry = ">=0.3.0, <1"
 isort = "^5"
 
 [tool.poetry.extras]
-# These are referenced in the tox.ini with `extras = dev`
-# These are auto-filled from dev-deps when you run tyrannosaurus sync
-# List additional extras sets like this:
-# optimization = ["numpy", "scikit-learn"]
-# You MUST also list any extras that you want for testing here
-# These will be installed by tox to be used for testing
-# (The dev dependencies will be installed already however)
-# Of course, you can remove the ` --extras "all"` line from tox.ini
-# to avoid this
 all = []
 
-
-#########################################################################################
-# Tyrannosaurus
-#########################################################################################
-
-# == NOTE ==
-# These ONLY configure the behavior of `tyrannosaurus sync` (and tyrannosaurus build).
-# These commands are not run inside the build pipeline; they're only run if you run them
-# specifically. You would only modify them to change this behavior.
-# You can safely remove this whole section if you don't want to use these commands at all.
-
-
+# Tyrannosaurus settings updated to point to new project table locations where possible
 [tool.tyrannosaurus.options]
-# This tells Tyrannosaurus to sort lines for things like dependencies
-# For example, it will sort dependencies in `[tool.poetry.dependencies]` alphabetically
 sort = false
-# This tells Tyrannosaurus to align the columns in TOML files surrounding = signs
-# For example, see how `[tool.tyrannosaurus.targets]` is sorted in this file
 align = true
 
 [tool.tyrannosaurus.sources]
-# These tell Tyrannosaurus where to get information to copy
-# If a value is not listed here, it won't be copied
-# Everything is either:
-# 1. A literal value, surrounded with single quotes (e.g. 'py38')
-# 2. A literal list, comma-separated (e.g. '[py38,py39]')
-# 3. A reference to a pyproject setting (e.g. tool.poetry.version)
-# 4. A value or list containing a special variable (e.g. 'Project J, copyright 2021')
-
-# --- VERSIONS ---
-# These control different aspects of Python versions
-# pycompatversions says what Python versions are compatible
-# tool.poetry.dependencies is almost definitely the best source for this
-# pytoxversions dictates what's actually used to test
-# tool.poetry.dependencies will choose all of the compatible major versions
-# You can alternatively specify exact versions, like '[3.8]' or '[3.8.5,3.9.1]'
-# (Don't forget the single quote marks in that example.)
-# pymetaversion is only used when building; e.g. in readthedocs, Docker, and Github workflows
-# (Note that this last one is not a list -- use single quotes but not brackets.)
-pycompatversions = "tool.poetry.dependencies"
-pytoxversions = "tool.poetry.dependencies"
+pycompatversions = "project.dependencies"
+pytoxversions = "project.dependencies"
 pymetaversion = "'3.9'"
-
-# --- DEVELOPMENT PARAMS ---
-# virtual machine info used in Dockerfile and Github workflows
 metavm = "'ubuntu-latest'"
-# Development dependencies
-devdeps = "tool.poetry.dev-dependencies"
-# Pick the latest versions compatible with the version ranges:
-#precommitvr        = "tool.poetry.dev-dependencies"
-#precommitconfigvr  = "tool.poetry.dev-dependencies"
-
-# --- PROJECT INFO ---
-# These are used in dunders like __copyright__, docs/conf.py, and PyPi classifiers (like Development Status)
-# 2021-02-03 is the date you run it at, and 2021-02-03 16-44-50 -08:00 is the datetime
+devdeps = "tool.poetry.group.dev.dependencies"
 status = "'Development'"
 date = "'2021-02-03'"
 copyright = "'Copyright 2021'"
-version = "tool.poetry.version"
-release = "tool.poetry.version"
-long_description = "tool.poetry.description"
-# These describe the license for your documentation text
-# By default no license is mentioned;
-# uncomment these to display the license in the docs
-#doc_license        = "'CC BY 4.0'"
-#doc_license_url    = "'https://creativecommons.org/licenses/by/4.0'"
-# or you can add this (and skip the license URL):
-#doc_license        = "'all rights reserved'"
-
-# --- AUTHOR INFO ---
-# TODO Fill in authors, contributors, and maintainers
-# Use this syntax: "Person Name <id:value,[id:value, [...]]>"
-# Specifying github usernames is recommended
-# ORCID IDs can also be referenced
-#authors = [
-#    "<<Author Name>> <github:<<username>>,orcid:<<id>>>"
-#]
+version = "project.version"
+release = "project.version"
+long_description = "project.description"
 authors = ["Alan D. Tse <github:alandtse>"]
 contributors = [
     "Alan D. Tse <github:alandtse>",
     "Parker Wahle <github:regulad>",
 ]
-# Turn this into a literal list if it is different than the authors
 maintainers = "tool.tyrannosaurus.sources.authors"
-
-# --- CODING STYLE ---
 linelength = "tool.black.line-length"
 importorderstyle = "'google'"
 docstringstyle = "'google'"
 
-
-# --- CODING STYLE IN PEP8 ---
 [tool.tyrannosaurus.sources.flake8skip]
-# These affect flake8 commands as directed in tox.ini
-# 'all' is copied to tox.ini [flake8.ignore]; these are always ignored
-# Any other keys refer to the directory that flake8 is called on
-# Ex, `authcaptureproxy = "'D100'"` adds D100 in `poetry run flake8 authcaptureproxy --ignore=D100`
-# (Note 1: flake8's --ignore overrides the [flake8.ignore], so Tyrannosaurus appends the "all" values.)
-# (Note 2: Keys referring to directory names that tox.ini doesn't call flake8 on are ignored.)
-# (Note 3: [tool.pycodestyle] and [tool.pydocstyle] don't need these values because flake8 handles it.)
-# You probably want some choices in 'all'
-# Then add some more to 'test' if you're less concerned with your test file conventions
-# 212 and 213 contradict; 203 and 204 contradict; D302 is not relevant in Py3;
-# D107 isn't needed sometimes; and the rest just seem too picky
 all = "'W503,E203,E225,E301,E302,E501,D107,D200,D205,D400,D403,D409,D410,D411,D212,W391,W293'"
-#authcaptureproxy  = ""
-#doc  = ""
 test = "'D100,D101,D102,D103,D104,S101,W503,E203,E225,E301,E302,E501,D107,D200,D205,D400,D403,D409,D410,D411,D212,W391,W293'"
 
-
 [tool.tyrannosaurus.targets]
-# This section tells Tyrannosaurus what to sync to.
-# These are file and directory names, without filename extensions.
-# Removing a line is the same as setting it to false
-# They will only be synced if they exist; never created
-# To get a recipe and anaconda env, run 'tyrannosaurus recipe' and 'tyrannosaurus env'
-# Choices are only true or false
 pyproject = true
 init = true
 tox = true
@@ -281,66 +129,26 @@ citation = true
 codemeta = true
 environment = false
 
-
-#########################################################################################
-# Testing
-#########################################################################################
-
-# This will be used in a future version of pytest:
-#[tool.pytest]
-
-[tool.tyrannosuarus.paths]
-# These specify where to put certain files
-# If they're left blank, the defaults will be used
-# The syntax is the same as for tool.tyrannosaurus.sources
-#recipe             = "'recipes/auth_capture_proxy/meta.yaml'"
-#environment        = "'environment.yml'"
-
 [tool.pytest.ini_options]
-# Really useful -- output logg statements
 log_cli = true
 log_cli_level = "INFO"
 log_cli_format = "%(asctime)s [%(levelname)8s] %(name)s: %(message)s (%(filename)s:%(lineno)s)"
 log_cli_date_format = "%Y-%m-%d %H:%M:%S"
 asyncio_mode = "strict"
 
-#########################################################################################
-# Commits & changelog generation
-#########################################################################################
-
-# Commitizen (https://github.com/commitizen-tools/commitizen/)
-# is a great tool to generate changelogs from commit messages
-# It doesn't directly map to keep-a-changelog change types (e.g. Added)
 [tool.commitizen]
 name = "cz_conventional_commits"
-# I recommend NOT including version and tag_format
-# See the docs ("guide" section) how to integrate `cz bump`
 
-# not used by default, but you could run it
-# in tox.ini or .github/workflows/publish.yml (with a commit)
 [tool.towncrier]
-# Alternatively, you could replace CHANGELOG.md
-# In my experience, commit logs make mediocre changelogs
 filename = "NEWS.md"
 
 [tool.semantic_release]
-version_toml = ["pyproject.toml:tool.poetry.version"]
+version_toml = ["pyproject.toml:project.version"]
 major_on_zero = true
 branch = "main"
 upload_to_pypi = true
 upload_to_release = true
 build_command = "pip install poetry && poetry build"
-
-#########################################################################################
-# Style checking
-#########################################################################################
-
-# You probably don't need to modify any of this.
-# A few you might want to change are:
-# [tool.black.line-length] and [tool.isort.line_length]
-# (Note that isort is not used by default, and that tyrannosaurus sync will handle them.)
-# [mypy.check_untyped_defs] (this is fairly aggressive)
-# [tool.towncrier] (if you want to set up towncrier)
 
 [tool.coverage.paths]
 source = ["authcaptureproxy"]
@@ -354,7 +162,6 @@ show_missing = true
 
 [tool.black]
 line-length = 100
-# As of December 2020, black doesn't accept py39
 target-version = ["py38"]
 
 [tool.isort]
@@ -367,14 +174,7 @@ max-line-length = 100
 statistics = true
 
 [tool.pydocstyle]
+
 [mypy]
 check_untyped_defs = true
 strict_optional = true
-
-
-# ------- THE FOLLOWING ARE NOT USED BY THEIR RESPECTIVE TOOLS  --------
-# --- There are open discussions about supporting pyproject for each ---
-# https://github.com/python/mypy/issues/5205
-# https://github.com/PyCQA/bandit/issues/606
-# https://github.com/PyCQA/pycodestyle/issues/813
-# https://github.com/PyCQA/pydocstyle/issues/447
