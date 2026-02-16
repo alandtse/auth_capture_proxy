@@ -22,13 +22,13 @@ try:
     __copyright__ = "Copyright 2021"
     __date__ = "2021-02-03"
     __uri__ = metadata.get("home-page") or metadata.get("Home-Page", "")
-    __title__ = metadata["name"]
-    __summary__ = metadata["summary"]
-    __license__ = metadata["license"]
-    __version__ = metadata["version"]
-    __author__ = metadata["author"]
-    __maintainer__ = metadata["maintainer"]
-    __contact__ = metadata["maintainer"]
+    __title__ = metadata.get("name", "")
+    __summary__ = metadata.get("summary", "")
+    __license__ = metadata.get("license", "")
+    __version__ = metadata.get("version", "")
+    __author__ = metadata.get("author", "")
+    __maintainer__ = metadata.get("maintainer", "")
+    __contact__ = metadata.get("maintainer", "")
 except PackageNotFoundError:  # pragma: no cover
     logger.error(f"Could not load package metadata for {pkg}. Is it installed?")
 
