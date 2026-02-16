@@ -21,7 +21,7 @@ try:
     __status__ = "Development"
     __copyright__ = "Copyright 2021"
     __date__ = "2021-02-03"
-    __uri__ = metadata["home-page"]
+    __uri__ = metadata.get("home-page") or metadata.get("Home-Page", "")
     __title__ = metadata["name"]
     __summary__ = metadata["summary"]
     __license__ = metadata["license"]
