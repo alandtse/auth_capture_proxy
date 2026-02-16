@@ -1,16 +1,9 @@
 #  SPDX-License-Identifier: Apache-2.0
 """Metadata for this auth_capture_proxy."""
+
 import logging
-
-try:
-    from importlib_metadata import PackageNotFoundError
-    from importlib_metadata import metadata as __load
-except ModuleNotFoundError:
-    from importlib.metadata import PackageNotFoundError  # type: ignore
-    from importlib.metadata import metadata as __load  # type: ignore
-
-# If you need to support Python 3.7, change to importlib_metadata (underscore, not dot)
-# and then list importlib_metadata to [tool.poetry.dependencies] and docs/requirements.txt
+from importlib.metadata import PackageNotFoundError
+from importlib.metadata import metadata as __load
 from pathlib import Path
 
 from authcaptureproxy import const

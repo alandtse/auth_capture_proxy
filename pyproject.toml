@@ -13,7 +13,7 @@ authors = [
 maintainers = [
     { name = "Alan D. Tse", email = "alandtse@gmail.com" }
 ]
-license = { text = "Apache-2.0" }
+license = "Apache-2.0"
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Natural Language :: English",

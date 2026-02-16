@@ -4,6 +4,7 @@ Python Package for auth capture proxy.
 
 Helper files.
 """
+
 import ast
 import json
 import logging
@@ -150,7 +151,7 @@ def swap_url(
         url = URL(url)
     old_url_string: Text = str(old_url.with_query({}))
     new_url_string: Text = str(new_url.with_query({}))
-    old_query: MultiDict = url.query
+    old_query: MultiDictProxy = url.query
     url_string = str(url.with_query({}))
     # ensure both paths end with "/" if one of them does
     if (
@@ -220,7 +221,7 @@ def replace_empty_url(new_url: URL, url: URL) -> URL:
 
 
 def get_nested_dict_keys(
-    nested_dict: Mapping[Text, Union[Callable, Dict[Text, Callable]]]
+    nested_dict: Mapping[Text, Union[Callable, Dict[Text, Callable]]],
 ) -> List[Text]:
     """Get list of nested dict keys.
 

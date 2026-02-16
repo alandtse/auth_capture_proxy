@@ -36,10 +36,16 @@ def find(key: str, default: Optional[Any] = None, as_type: Type[Any] = str) -> O
 # Basic information, used by Sphinx
 # Leave language as None unless you have multiple translations
 language = None
-project = str(find("tool.poetry.name", default=""))
-version = find("tool.poetry.version", default="")
+project = str(find("project.name", default=""))
+version = find("project.version", default="")
 release = version
-author = ", ".join(find("tool.poetry.authors", default="", as_type=list))  # type: ignore
+authors = find("project.authors", default=[], as_type=list)
+if isinstance(authors, list) and len(authors) > 0 and isinstance(authors[0], dict):
+    author = ", ".join(str(a.get("name", "")) for a in authors)
+elif isinstance(authors, list):
+    author = ", ".join(str(a) for a in authors)
+else:
+    author = ""
 
 # Copyright string (for documentation)
 # It's not clear whether we're supposed to, but we'll add the license

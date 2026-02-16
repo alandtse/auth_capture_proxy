@@ -32,9 +32,7 @@ class DummyAsyncClient:
             }
         )
         req = httpx.Request("POST", url)
-        return httpx.Response(
-            200, request=req, text="ok", headers={"Content-Type": "text/plain"}
-        )
+        return httpx.Response(200, request=req, text="ok", headers={"Content-Type": "text/plain"})
 
 
 async def _make_request(
@@ -57,12 +55,18 @@ async def _make_request(
 
     loop = asyncio.get_running_loop()
 
+    class MockProtocol(asyncio.BaseProtocol):
+        def __init__(self):
+            self._reading_paused = False
+
+    protocol = MockProtocol()
+
     # aiohttp 3.9: StreamReader(protocol, limit, loop)
     # newer aiohttp: signature varies; keep this compatible.
     try:
-        payload = StreamReader(None, 2**16, loop=loop)  # type: ignore[arg-type]
+        payload = StreamReader(protocol, 2**16, loop=loop)  # type: ignore[arg-type]
     except TypeError:
-        payload = StreamReader(protocol=None, limit=2**16, loop=loop)  # type: ignore[arg-type]
+        payload = StreamReader(protocol=protocol, limit=2**16, loop=loop)  # type: ignore[arg-type]
 
     if body:
         payload.feed_data(body)
