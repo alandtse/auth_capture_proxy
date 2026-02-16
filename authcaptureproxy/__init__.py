@@ -5,7 +5,9 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
-from importlib.metadata import PackageNotFoundError, PackageMetadata, metadata as __load
+from email.message import Message
+from importlib.metadata import PackageNotFoundError, metadata as __load
+from typing import cast
 
 from authcaptureproxy import const
 from authcaptureproxy.auth_capture_proxy import AuthCaptureProxy
@@ -30,25 +32,22 @@ __author__ = ""
 __maintainer__ = ""
 __contact__ = ""
 
-metadata: PackageMetadata | None = None
+metadata: Message | None = None
 
 try:
-    md = __load(pkg)    # md is PackageMetadata (non-optional)
-    metadata = md            # keep public handle
+    md = cast(Message, __load(pkg))  # typed as Message so .get() is valid
+    metadata = md                    # keep public handle for cli.py
 
-    __uri__ = md.get("Home-page") or metadata.get("Home-Page") or ""
+    __uri__ = md.get("Home-page") or md.get("Home-Page") or ""
     __title__ = md.get("Name") or ""
     __summary__ = md.get("Summary") or ""
     __license__ = md.get("License") or ""
     __version__ = md.get("Version") or ""
     __author__ = md.get("Author") or ""
     __maintainer__ = md.get("Maintainer") or ""
-
     __contact__ = (
         md.get("Author-email")
         or md.get("Maintainer-email")
-        or md.get("Author-email".lower())          # harmless fallback if casing differs
-        or md.get("Maintainer-email".lower())
         or md.get("Maintainer")
         or ""
     )
