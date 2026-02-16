@@ -3,10 +3,9 @@
 
 from __future__ import annotations
 
-from email.message import Message
-from importlib.metadata import PackageNotFoundError, metadata as __load
 import logging
 from pathlib import Path
+from importlib.metadata import PackageNotFoundError, PackageMetadata, metadata as __load
 
 from authcaptureproxy import const
 from authcaptureproxy.auth_capture_proxy import AuthCaptureProxy
@@ -18,7 +17,6 @@ from authcaptureproxy.stackoverflow import return_timer_countdown_refresh_html
 pkg = Path(__file__).absolute().parent.name
 logger = logging.getLogger(pkg)
 
-# Always define dunders so importing them never raises NameError
 __status__ = "Development"
 __copyright__ = "Copyright 2021"
 __date__ = "2021-02-03"
@@ -32,25 +30,26 @@ __author__ = ""
 __maintainer__ = ""
 __contact__ = ""
 
-metadata: Message | None = None
+metadata: PackageMetadata | None = None
 
 try:
-    metadata = __load(pkg)
+    md = __load(pkg)    # md is PackageMetadata (non-optional)
+    metadata = md            # keep public handle
 
-    # Canonical metadata header names are Title-Case
-    __uri__ = metadata.get("Home-page") or metadata.get("Home-Page") or ""
-    __title__ = metadata.get("Name") or ""
-    __summary__ = metadata.get("Summary") or ""
-    __license__ = metadata.get("License") or ""
-    __version__ = metadata.get("Version") or ""
-    __author__ = metadata.get("Author") or ""
-    __maintainer__ = metadata.get("Maintainer") or ""
+    __uri__ = md.get("Home-page") or metadata.get("Home-Page") or ""
+    __title__ = md.get("Name") or ""
+    __summary__ = md.get("Summary") or ""
+    __license__ = md.get("License") or ""
+    __version__ = md.get("Version") or ""
+    __author__ = md.get("Author") or ""
+    __maintainer__ = md.get("Maintainer") or ""
 
-    # Prefer an email header for contact, with sensible fallbacks
     __contact__ = (
-        metadata.get("Author-email")
-        or metadata.get("Maintainer-email")
-        or metadata.get("Maintainer")
+        md.get("Author-email")
+        or md.get("Maintainer-email")
+        or md.get("Author-email".lower())          # harmless fallback if casing differs
+        or md.get("Maintainer-email".lower())
+        or md.get("Maintainer")
         or ""
     )
 
@@ -72,4 +71,5 @@ __all__ = [
     "find_regex_urls",
     "prepend_url",
     "swap_url",
+    "metadata",
 ]
