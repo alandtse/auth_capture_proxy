@@ -42,6 +42,9 @@ sdist/
 docs/_build
 cython_debug/
 docs/autoapi
+cov.xml
+.coverage.*
+
 
 # Hidden files that are definitely unwanted (redundant)
 .tox/
