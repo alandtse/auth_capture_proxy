@@ -148,7 +148,7 @@ major_on_zero = true
 branch = "main"
 upload_to_pypi = true
 upload_to_release = true
-build_command = "pip install poetry && poetry build"
+build_command = "pip install poetry && poetry lock && poetry build"
 
 [tool.coverage.paths]
 source = ["authcaptureproxy"]
