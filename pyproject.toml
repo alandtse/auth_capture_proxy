@@ -4,7 +4,7 @@ build-backend = "poetry.core.masonry.api"
 
 [project]
 name = "authcaptureproxy"
-version = "1.3.6"
+version = "1.3.7"
 description = "A Python project to create a proxy to capture authentication information from a webpage. This is useful to capture oauth login details without access to a third-party oauth."
 readme = "README.md"
 authors = [

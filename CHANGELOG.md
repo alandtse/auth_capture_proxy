@@ -1,6 +1,51 @@
 # CHANGELOG
 
 
+## v1.3.7 (2026-02-17)
+
+### Bug Fixes
+
+* fix: `home-page` key error in metadata (#45)
+
+* Update __init__.py
+
+Replace:
+```
+__uri__ = metadata["home-page"]
+```
+with: 
+```__uri__ = metadata.get("home-page") or metadata.get("Home-Page", "")
+```
+
+* Address nitpick comment
+
+* fix: typing fails: PackageMetadata has no attribute "get" [attr-defined]
+
+Use Message semantics (.get() is typed)
+
+* Address netpick comments
+
+* fix: ERROR collecting tests/test_cli.py in build 3.11
+
+* fix: build 3.10 error: Incompatible types in assignment (expression has type "PackageMetadata", variable has type "Optional[Message]") [assignment]
+
+* Fix typing: stop calling .get() on PackageMetadata (for mypy)
+
+* chore: bump pre-commit to >=3.2 for hook stage compatibility ([`6da3ced`](https://github.com/alandtse/auth_capture_proxy/commit/6da3cedac5f75d0ca635472c5e2ea85958d3f306))
+
+### Build System
+
+* build: fix tox ([`e6410bb`](https://github.com/alandtse/auth_capture_proxy/commit/e6410bb11cb4d7ee400b59feb995a741c8990a6e))
+
+### Chores
+
+* chore: fix config version ([`e6d48c6`](https://github.com/alandtse/auth_capture_proxy/commit/e6d48c6887d070c7f170d3494af2d13fdbb3a58f))
+
+### Refactoring
+
+* refactor: migrate to pep621 ([`bd2f8a8`](https://github.com/alandtse/auth_capture_proxy/commit/bd2f8a88b74e113a748bf173a30c45bcd5d02ff9))
+
+
 ## v1.3.6 (2026-02-08)
 
 ### Bug Fixes
