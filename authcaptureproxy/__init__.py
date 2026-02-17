@@ -4,9 +4,10 @@
 from __future__ import annotations
 
 import logging
-from pathlib import Path
 from email.message import Message
-from importlib.metadata import PackageNotFoundError, metadata as __load
+from importlib.metadata import PackageNotFoundError
+from importlib.metadata import metadata as __load
+from pathlib import Path
 from typing import cast
 
 from authcaptureproxy import const
@@ -36,7 +37,7 @@ metadata: Message | None = None
 
 try:
     md = cast(Message, __load(pkg))  # typed as Message so .get() is valid
-    metadata = md                    # keep public handle for cli.py
+    metadata = md  # keep public handle for cli.py
 
     __uri__ = md.get("Home-page") or md.get("Home-Page") or ""
     __title__ = md.get("Name") or ""
@@ -45,12 +46,7 @@ try:
     __version__ = md.get("Version") or ""
     __author__ = md.get("Author") or ""
     __maintainer__ = md.get("Maintainer") or ""
-    __contact__ = (
-        md.get("Author-email")
-        or md.get("Maintainer-email")
-        or md.get("Maintainer")
-        or ""
-    )
+    __contact__ = md.get("Author-email") or md.get("Maintainer-email") or md.get("Maintainer") or ""
 
 except PackageNotFoundError:  # pragma: no cover
     logger.error("Could not load package metadata for %s. Is it installed?", pkg)

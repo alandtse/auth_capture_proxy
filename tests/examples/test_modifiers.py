@@ -181,9 +181,10 @@ async def test_replace_empty_action_urls():
             result = await modifiers.replace_empty_action_urls(url, form)
             old_soup = bs(form, "html.parser")
             soup = bs(result, "html.parser")
-            if old_soup.find("form", action="").get("action") is not None:
+            found_form = old_soup.find("form", action="")
+            if found_form and found_form.get("action") is not None:
                 assert not soup.find("form", action="")
-                assert soup.find("form", action=url)["action"] == url
+                assert soup.find("form", action=str(url))["action"] == str(url)
 
 
 @pytest.mark.asyncio

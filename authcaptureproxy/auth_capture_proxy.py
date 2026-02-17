@@ -1,5 +1,6 @@
 #  SPDX-License-Identifier: Apache-2.0
 """Python Package for auth capture proxy."""
+
 import asyncio
 import logging
 import posixpath
@@ -754,9 +755,11 @@ class AuthCaptureProxy:
         # pass through non parsed content
         _LOGGER.debug(
             "Passing through %s as %s",
-            URL(str(request.url)).name
-            if URL(str(request.url)).name
-            else URL(str(request.url)).path,
+            (
+                URL(str(request.url)).name
+                if URL(str(request.url)).name
+                else URL(str(request.url)).path
+            ),
             content_type,
         )
         return await self._build_response(resp, body=resp.content, content_type=content_type)

@@ -4,6 +4,7 @@ Python Package auth capture proxy.
 
 This is code borrowed from stack overflow.
 """
+
 import socket
 from typing import Text
 

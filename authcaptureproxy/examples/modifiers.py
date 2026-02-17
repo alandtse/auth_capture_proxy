@@ -4,6 +4,7 @@ Python Package for auth capture proxy.
 
 Example modifiers.
 """
+
 import logging
 import re
 from functools import partial

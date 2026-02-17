@@ -10,6 +10,7 @@ This interceptor handles:
 - P shim and jQuery shim injection for Amazon's A-framework in AJAX responses
 - Submit blocker and AJAX proxy injection for CVF full-page navigations
 """
+
 import base64
 import json as _json
 import logging
