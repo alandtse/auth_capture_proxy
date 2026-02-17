@@ -147,10 +147,14 @@ filename = "NEWS.md"
 [tool.semantic_release]
 version_toml = ["pyproject.toml:project.version"]
 major_on_zero = true
-branch = "main"
 upload_to_pypi = true
-upload_to_release = true
+upload_to_vcs_release = true
 build_command = "pip install poetry && poetry lock && poetry build"
+
+[tool.semantic_release.branches.main]
+match = "(main|master)"
+prerelease_token = "rc"
+prerelease = false
 
 [tool.coverage.paths]
 source = ["authcaptureproxy"]
