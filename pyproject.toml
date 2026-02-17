@@ -58,7 +58,7 @@ coverage = { extras = ["toml"], version = "^5" }
 flake8 = ">=3.9, <8.0"
 flake8-bugbear = ">=20.11, <25.0"
 flake8-docstrings = "^1"
-pre-commit = ">=2.9, <3.0"
+pre-commit = ">=3.2, <4.0"
 pre-commit-hooks = ">=3.4, <4.0"
 pytest = "^7"
 pytest-cov = "^2"
