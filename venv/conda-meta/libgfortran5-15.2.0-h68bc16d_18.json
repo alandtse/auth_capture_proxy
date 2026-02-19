@@ -1,0 +1,66 @@
+{
+  "name": "libgfortran5",
+  "version": "15.2.0",
+  "build": "h68bc16d_18",
+  "build_number": 18,
+  "channel": "https://conda.anaconda.org/conda-forge/noarch",
+  "subdir": "linux-64",
+  "fn": "libgfortran5-15.2.0-h68bc16d_18.conda",
+  "md5": "646855f357199a12f02a87382d429b75",
+  "url": "https://conda.anaconda.org/conda-forge/linux-64/libgfortran5-15.2.0-h68bc16d_18.conda",
+  "sha256": "539b57cf50ec85509a94ba9949b7e30717839e4d694bc94f30d41c9d34de2d12",
+  "depends": [
+    "__glibc >=2.17,<3.0.a0",
+    "libgcc >=15.2.0"
+  ],
+  "constrains": [
+    "libgfortran 15.2.0"
+  ],
+  "license": "GPL-3.0-only WITH GCC-exception-3.1",
+  "timestamp": 1771378241000,
+  "size": 2482475,
+  "requested_spec": "None",
+  "package_tarball_full_path": "/opt/conda/pkgs/libgfortran5-15.2.0-h68bc16d_18.conda",
+  "extracted_package_dir": "/opt/conda/pkgs/libgfortran5-15.2.0-h68bc16d_18",
+  "files": [
+    "lib/libgfortran.so",
+    "lib/libgfortran.so.5",
+    "lib/libgfortran.so.5.0.0",
+    "share/licenses/libgfortran/RUNTIME.LIBRARY.EXCEPTION"
+  ],
+  "paths_data": {
+    "paths_version": 1,
+    "paths": [
+      {
+        "_path": "lib/libgfortran.so",
+        "path_type": "softlink",
+        "sha256": "a34b1b99e9376d3c6793138aae7c3827d012da122aaa96562498abd78f7a6d9e",
+        "size_in_bytes": 11324144
+      },
+      {
+        "_path": "lib/libgfortran.so.5",
+        "path_type": "softlink",
+        "sha256": "a34b1b99e9376d3c6793138aae7c3827d012da122aaa96562498abd78f7a6d9e",
+        "size_in_bytes": 11324144
+      },
+      {
+        "_path": "lib/libgfortran.so.5.0.0",
+        "path_type": "hardlink",
+        "sha256": "a34b1b99e9376d3c6793138aae7c3827d012da122aaa96562498abd78f7a6d9e",
+        "size_in_bytes": 11324144,
+        "sha256_in_prefix": "a34b1b99e9376d3c6793138aae7c3827d012da122aaa96562498abd78f7a6d9e"
+      },
+      {
+        "_path": "share/licenses/libgfortran/RUNTIME.LIBRARY.EXCEPTION",
+        "path_type": "hardlink",
+        "sha256": "9d6b43ce4d8de0c878bf16b54d8e7a10d9bd42b75178153e3af6a815bdc90f74",
+        "size_in_bytes": 3324,
+        "sha256_in_prefix": "9d6b43ce4d8de0c878bf16b54d8e7a10d9bd42b75178153e3af6a815bdc90f74"
+      }
+    ]
+  },
+  "link": {
+    "source": "/opt/conda/pkgs/libgfortran5-15.2.0-h68bc16d_18",
+    "type": 1
+  }
+}

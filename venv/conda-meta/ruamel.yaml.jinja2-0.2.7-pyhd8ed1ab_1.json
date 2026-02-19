@@ -1,0 +1,134 @@
+{
+  "name": "ruamel.yaml.jinja2",
+  "version": "0.2.7",
+  "build": "pyhd8ed1ab_1",
+  "build_number": 1,
+  "channel": "https://conda.anaconda.org/conda-forge/noarch",
+  "subdir": "noarch",
+  "fn": "ruamel.yaml.jinja2-0.2.7-pyhd8ed1ab_1.conda",
+  "md5": "19418a97f875663d24679c9fdddcbc3b",
+  "url": "https://conda.anaconda.org/conda-forge/noarch/ruamel.yaml.jinja2-0.2.7-pyhd8ed1ab_1.conda",
+  "sha256": "51542184281b5304ef279d4be4fb9d86e5ccbb7bd6c3c6b7a3fa944869afe3bb",
+  "depends": [
+    "python >=3.9",
+    "ruamel.yaml >=0.16.1"
+  ],
+  "constrains": [],
+  "noarch": "python",
+  "license": "MIT",
+  "package_type": "noarch_python",
+  "timestamp": 1734910860000,
+  "size": 11563,
+  "requested_spec": "None",
+  "package_tarball_full_path": "/opt/conda/pkgs/ruamel.yaml.jinja2-0.2.7-pyhd8ed1ab_1.conda",
+  "extracted_package_dir": "/opt/conda/pkgs/ruamel.yaml.jinja2-0.2.7-pyhd8ed1ab_1",
+  "files": [
+    "lib/python3.14/site-packages/ruamel.yaml.jinja2-0.2.7.dist-info/INSTALLER",
+    "lib/python3.14/site-packages/ruamel.yaml.jinja2-0.2.7.dist-info/LICENSE",
+    "lib/python3.14/site-packages/ruamel.yaml.jinja2-0.2.7.dist-info/METADATA",
+    "lib/python3.14/site-packages/ruamel.yaml.jinja2-0.2.7.dist-info/RECORD",
+    "lib/python3.14/site-packages/ruamel.yaml.jinja2-0.2.7.dist-info/REQUESTED",
+    "lib/python3.14/site-packages/ruamel.yaml.jinja2-0.2.7.dist-info/WHEEL",
+    "lib/python3.14/site-packages/ruamel.yaml.jinja2-0.2.7.dist-info/direct_url.json",
+    "lib/python3.14/site-packages/ruamel.yaml.jinja2-0.2.7.dist-info/namespace_packages.txt",
+    "lib/python3.14/site-packages/ruamel.yaml.jinja2-0.2.7.dist-info/top_level.txt",
+    "lib/python3.14/site-packages/ruamel/yaml/jinja2/__init__.py",
+    "lib/python3.14/site-packages/ruamel/yaml/jinja2/__plug_in__.py",
+    "lib/python3.14/site-packages/ruamel/yaml/jinja2/__pycache__/__init__.cpython-314.pyc",
+    "lib/python3.14/site-packages/ruamel/yaml/jinja2/__pycache__/__plug_in__.cpython-314.pyc"
+  ],
+  "paths_data": {
+    "paths_version": 1,
+    "paths": [
+      {
+        "_path": "site-packages/ruamel.yaml.jinja2-0.2.7.dist-info/INSTALLER",
+        "path_type": "hardlink",
+        "sha256": "d0edee15f91b406f3f99726e44eb990be6e34fd0345b52b910c568e0eef6a2a8",
+        "size_in_bytes": 5,
+        "sha256_in_prefix": "d0edee15f91b406f3f99726e44eb990be6e34fd0345b52b910c568e0eef6a2a8"
+      },
+      {
+        "_path": "site-packages/ruamel.yaml.jinja2-0.2.7.dist-info/LICENSE",
+        "path_type": "hardlink",
+        "sha256": "06c0cfe64ca2156d91aa5b761adda03bc79a6f8cdb9a0b874eb2659a0e3a2b06",
+        "size_in_bytes": 1121,
+        "sha256_in_prefix": "06c0cfe64ca2156d91aa5b761adda03bc79a6f8cdb9a0b874eb2659a0e3a2b06"
+      },
+      {
+        "_path": "site-packages/ruamel.yaml.jinja2-0.2.7.dist-info/METADATA",
+        "path_type": "hardlink",
+        "sha256": "f08f7194841a09d71831c692290ba9a16124929bebfd13da5c0be02180ac02fb",
+        "size_in_bytes": 2931,
+        "sha256_in_prefix": "f08f7194841a09d71831c692290ba9a16124929bebfd13da5c0be02180ac02fb"
+      },
+      {
+        "_path": "site-packages/ruamel.yaml.jinja2-0.2.7.dist-info/RECORD",
+        "path_type": "hardlink",
+        "sha256": "1073131871aea012b319e00c4b1f4093eb4771d06a49c83d9a4373c19d168399",
+        "size_in_bytes": 1160,
+        "sha256_in_prefix": "1073131871aea012b319e00c4b1f4093eb4771d06a49c83d9a4373c19d168399"
+      },
+      {
+        "_path": "site-packages/ruamel.yaml.jinja2-0.2.7.dist-info/REQUESTED",
+        "path_type": "hardlink",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "size_in_bytes": 0,
+        "sha256_in_prefix": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "_path": "site-packages/ruamel.yaml.jinja2-0.2.7.dist-info/WHEEL",
+        "path_type": "hardlink",
+        "sha256": "3d9504c5d7fbd548bfb28ebb417a724ae1ed0a2dfe277c2f1783912ba93f4bc5",
+        "size_in_bytes": 91,
+        "sha256_in_prefix": "3d9504c5d7fbd548bfb28ebb417a724ae1ed0a2dfe277c2f1783912ba93f4bc5"
+      },
+      {
+        "_path": "site-packages/ruamel.yaml.jinja2-0.2.7.dist-info/direct_url.json",
+        "path_type": "hardlink",
+        "sha256": "713484150db54a8006fa8d1bf894f66fde61fa13073d5c8558f01da8e7cdcde8",
+        "size_in_bytes": 114,
+        "sha256_in_prefix": "713484150db54a8006fa8d1bf894f66fde61fa13073d5c8558f01da8e7cdcde8"
+      },
+      {
+        "_path": "site-packages/ruamel.yaml.jinja2-0.2.7.dist-info/namespace_packages.txt",
+        "path_type": "hardlink",
+        "sha256": "b8ccc27461cd768c3bfe29cec7aad96b11ba378e5c5561c4ad4d218e2b6f7a1b",
+        "size_in_bytes": 19,
+        "sha256_in_prefix": "b8ccc27461cd768c3bfe29cec7aad96b11ba378e5c5561c4ad4d218e2b6f7a1b"
+      },
+      {
+        "_path": "site-packages/ruamel.yaml.jinja2-0.2.7.dist-info/top_level.txt",
+        "path_type": "hardlink",
+        "sha256": "96ee5aafd8a5bf24b4de336f4b9c7d234ff737008a92f225636934407f4002b9",
+        "size_in_bytes": 7,
+        "sha256_in_prefix": "96ee5aafd8a5bf24b4de336f4b9c7d234ff737008a92f225636934407f4002b9"
+      },
+      {
+        "_path": "site-packages/ruamel/yaml/jinja2/__init__.py",
+        "path_type": "hardlink",
+        "sha256": "d9a5a43101833d7c5d351070346f34585daeec4e2a2d5e4939990c91e43c754b",
+        "size_in_bytes": 783,
+        "sha256_in_prefix": "d9a5a43101833d7c5d351070346f34585daeec4e2a2d5e4939990c91e43c754b"
+      },
+      {
+        "_path": "site-packages/ruamel/yaml/jinja2/__plug_in__.py",
+        "path_type": "hardlink",
+        "sha256": "d82209ad75bfdd1e8d1d9e7bd6851f343cd96b7f5a048859981333dc758825eb",
+        "size_in_bytes": 4571,
+        "sha256_in_prefix": "d82209ad75bfdd1e8d1d9e7bd6851f343cd96b7f5a048859981333dc758825eb"
+      },
+      {
+        "_path": "lib/python3.14/site-packages/ruamel/yaml/jinja2/__pycache__/__init__.cpython-314.pyc",
+        "path_type": "pyc_file"
+      },
+      {
+        "_path": "lib/python3.14/site-packages/ruamel/yaml/jinja2/__pycache__/__plug_in__.cpython-314.pyc",
+        "path_type": "pyc_file"
+      }
+    ]
+  },
+  "link": {
+    "source": "/opt/conda/pkgs/ruamel.yaml.jinja2-0.2.7-pyhd8ed1ab_1",
+    "type": 1
+  }
+}

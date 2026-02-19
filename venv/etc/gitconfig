@@ -1,0 +1,4 @@
+[http]
+        sslVerify = true
+        sslCAPath = /workspaces/auth_capture_proxy/venv/ssl/cacert.pem
+        sslCAInfo = /workspaces/auth_capture_proxy/venv/ssl/cacert.pem

@@ -209,36 +209,48 @@ async def find_urls_bs4(
                 # TODO: Rewrite regex to handle general case
                 pattern = r"(?<=style=[\"']background-image:url\([\"']).*(?=[\"']\))"
                 attribute_value = html_tag.get(attribute)
-                url: Optional[URL] = URL(str(re.search(pattern, attribute_value)))
-                if url is not None and url not in exceptions.get(tag, []):
-                    new_value = re.sub(
-                        pattern,
-                        await run_func(modifier, name="", url=url),
-                        attribute_value,
-                    )
-                    old_value = html_tag[attribute]
+                if not isinstance(attribute_value, str):
+                    continue
+                match = re.search(pattern, attribute_value)
+                if not match:
+                    continue
+                try:
+                    url: Optional[URL] = URL(match.group(0))
+                except Exception:
+                    url = None
+                if url is not None and str(url) not in exceptions.get(tag, []):
+                    replacement = await run_func(modifier, name="", url=url)
+                    new_value = re.sub(pattern, replacement, attribute_value)
+                    old_value = html_tag.get(attribute)
                     html_tag[attribute] = new_value
-                    if str(old_value) != str(html_tag[attribute]):
+                    if str(old_value) != str(html_tag.get(attribute)):
                         _LOGGER.debug(
                             "Modified url for style:background-image %s -> %s",
                             url,
-                            html_tag[attribute],
+                            html_tag.get(attribute),
                         )
             else:
-                url = URL(html_tag.get(attribute)) if html_tag.get(attribute) is not None else None
+                raw_value = html_tag.get(attribute)
+                if not isinstance(raw_value, str) or not raw_value:
+                    url = None
+                else:
+                    try:
+                        url = URL(raw_value)
+                    except Exception:
+                        url = None
                 if (
                     url is not None
                     and not str(url).startswith("data:")
                     and str(url) not in exceptions.get(tag, [])
                 ):
-                    old_value = html_tag[attribute]
+                    old_value = html_tag.get(attribute)
                     html_tag[attribute] = await run_func(modifier, name="", url=url)
-                    if str(old_value) != str(html_tag[attribute]):
+                    if str(old_value) != str(html_tag.get(attribute)):
                         _LOGGER.debug(
                             "Modified url for %s:%s %s -> %s",
                             tag,
                             attribute,
                             url,
-                            html_tag[attribute],
+                            html_tag.get(attribute),
                         )
     return str(soup)

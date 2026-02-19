@@ -1,0 +1,360 @@
+{
+  "name": "progressbar2",
+  "version": "4.5.0",
+  "build": "pyhd8ed1ab_1",
+  "build_number": 1,
+  "channel": "https://conda.anaconda.org/conda-forge/noarch",
+  "subdir": "noarch",
+  "fn": "progressbar2-4.5.0-pyhd8ed1ab_1.conda",
+  "md5": "e557abf678a0bf100fe7cf9d2b4f4a72",
+  "url": "https://conda.anaconda.org/conda-forge/noarch/progressbar2-4.5.0-pyhd8ed1ab_1.conda",
+  "sha256": "9c9f851688f1463c0c6a667dc34a8bce9a7ee2f630b0346ece448e77938f7d5b",
+  "depends": [
+    "python >=3.9",
+    "python-utils >=3.8.1"
+  ],
+  "constrains": [],
+  "noarch": "python",
+  "license": "BSD-3-Clause",
+  "package_type": "noarch_python",
+  "timestamp": 1734172966000,
+  "size": 54711,
+  "requested_spec": "None",
+  "package_tarball_full_path": "/opt/conda/pkgs/progressbar2-4.5.0-pyhd8ed1ab_1.conda",
+  "extracted_package_dir": "/opt/conda/pkgs/progressbar2-4.5.0-pyhd8ed1ab_1",
+  "files": [
+    "bin/progressbar",
+    "lib/python3.14/site-packages/progressbar/__about__.py",
+    "lib/python3.14/site-packages/progressbar/__init__.py",
+    "lib/python3.14/site-packages/progressbar/__main__.py",
+    "lib/python3.14/site-packages/progressbar/algorithms.py",
+    "lib/python3.14/site-packages/progressbar/bar.py",
+    "lib/python3.14/site-packages/progressbar/base.py",
+    "lib/python3.14/site-packages/progressbar/env.py",
+    "lib/python3.14/site-packages/progressbar/multi.py",
+    "lib/python3.14/site-packages/progressbar/py.typed",
+    "lib/python3.14/site-packages/progressbar/shortcuts.py",
+    "lib/python3.14/site-packages/progressbar/terminal/__init__.py",
+    "lib/python3.14/site-packages/progressbar/terminal/base.py",
+    "lib/python3.14/site-packages/progressbar/terminal/colors.py",
+    "lib/python3.14/site-packages/progressbar/terminal/os_specific/__init__.py",
+    "lib/python3.14/site-packages/progressbar/terminal/os_specific/posix.py",
+    "lib/python3.14/site-packages/progressbar/terminal/os_specific/windows.py",
+    "lib/python3.14/site-packages/progressbar/terminal/stream.py",
+    "lib/python3.14/site-packages/progressbar/utils.py",
+    "lib/python3.14/site-packages/progressbar/widgets.py",
+    "lib/python3.14/site-packages/progressbar2-4.5.0.dist-info/INSTALLER",
+    "lib/python3.14/site-packages/progressbar2-4.5.0.dist-info/LICENSE",
+    "lib/python3.14/site-packages/progressbar2-4.5.0.dist-info/METADATA",
+    "lib/python3.14/site-packages/progressbar2-4.5.0.dist-info/RECORD",
+    "lib/python3.14/site-packages/progressbar2-4.5.0.dist-info/REQUESTED",
+    "lib/python3.14/site-packages/progressbar2-4.5.0.dist-info/WHEEL",
+    "lib/python3.14/site-packages/progressbar2-4.5.0.dist-info/direct_url.json",
+    "lib/python3.14/site-packages/progressbar2-4.5.0.dist-info/entry_points.txt",
+    "lib/python3.14/site-packages/progressbar2-4.5.0.dist-info/top_level.txt",
+    "lib/python3.14/site-packages/progressbar/__pycache__/__about__.cpython-314.pyc",
+    "lib/python3.14/site-packages/progressbar/__pycache__/__init__.cpython-314.pyc",
+    "lib/python3.14/site-packages/progressbar/__pycache__/__main__.cpython-314.pyc",
+    "lib/python3.14/site-packages/progressbar/__pycache__/algorithms.cpython-314.pyc",
+    "lib/python3.14/site-packages/progressbar/__pycache__/bar.cpython-314.pyc",
+    "lib/python3.14/site-packages/progressbar/__pycache__/base.cpython-314.pyc",
+    "lib/python3.14/site-packages/progressbar/__pycache__/env.cpython-314.pyc",
+    "lib/python3.14/site-packages/progressbar/__pycache__/multi.cpython-314.pyc",
+    "lib/python3.14/site-packages/progressbar/__pycache__/shortcuts.cpython-314.pyc",
+    "lib/python3.14/site-packages/progressbar/terminal/__pycache__/__init__.cpython-314.pyc",
+    "lib/python3.14/site-packages/progressbar/terminal/__pycache__/base.cpython-314.pyc",
+    "lib/python3.14/site-packages/progressbar/terminal/__pycache__/colors.cpython-314.pyc",
+    "lib/python3.14/site-packages/progressbar/terminal/os_specific/__pycache__/__init__.cpython-314.pyc",
+    "lib/python3.14/site-packages/progressbar/terminal/os_specific/__pycache__/posix.cpython-314.pyc",
+    "lib/python3.14/site-packages/progressbar/terminal/os_specific/__pycache__/windows.cpython-314.pyc",
+    "lib/python3.14/site-packages/progressbar/terminal/__pycache__/stream.cpython-314.pyc",
+    "lib/python3.14/site-packages/progressbar/__pycache__/utils.cpython-314.pyc",
+    "lib/python3.14/site-packages/progressbar/__pycache__/widgets.cpython-314.pyc"
+  ],
+  "paths_data": {
+    "paths_version": 1,
+    "paths": [
+      {
+        "_path": "python-scripts/progressbar",
+        "prefix_placeholder": "/home/conda/feedstock_root/build_artifacts/progressbar2_1734172870593/_h_env_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehol",
+        "file_mode": "text",
+        "path_type": "hardlink",
+        "sha256": "618e119a78653bf9582f42415974e1f01526691979872484ce371f05aafffc58",
+        "size_in_bytes": 502,
+        "sha256_in_prefix": "962dc6c38da88f28d115f252339f6ac1c59d82e77507ea0fdbfe3abc734291b4"
+      },
+      {
+        "_path": "site-packages/progressbar/__about__.py",
+        "path_type": "hardlink",
+        "sha256": "b45de4babe8cb888be272d09a59c7ceeda5652f40024b84d6c89db1bfed93aa1",
+        "size_in_bytes": 1006,
+        "sha256_in_prefix": "b45de4babe8cb888be272d09a59c7ceeda5652f40024b84d6c89db1bfed93aa1"
+      },
+      {
+        "_path": "site-packages/progressbar/__init__.py",
+        "path_type": "hardlink",
+        "sha256": "151b71839080743e91e1dd5cac6ea0d89329972c0403552d2ae42d0807fed489",
+        "size_in_bytes": 1883,
+        "sha256_in_prefix": "151b71839080743e91e1dd5cac6ea0d89329972c0403552d2ae42d0807fed489"
+      },
+      {
+        "_path": "site-packages/progressbar/__main__.py",
+        "path_type": "hardlink",
+        "sha256": "ab2fb2a9cdf22ce8dc3a10807f49da4a93b395c4c75407c41b7f80e966c32f28",
+        "size_in_bytes": 10957,
+        "sha256_in_prefix": "ab2fb2a9cdf22ce8dc3a10807f49da4a93b395c4c75407c41b7f80e966c32f28"
+      },
+      {
+        "_path": "site-packages/progressbar/algorithms.py",
+        "path_type": "hardlink",
+        "sha256": "0a6ce90bccd30e9170a007db41c2ec0d7df16090e552768d8d387117873f5f2e",
+        "size_in_bytes": 1668,
+        "sha256_in_prefix": "0a6ce90bccd30e9170a007db41c2ec0d7df16090e552768d8d387117873f5f2e"
+      },
+      {
+        "_path": "site-packages/progressbar/bar.py",
+        "path_type": "hardlink",
+        "sha256": "79ab95178f74643ac6ee61c49efd79b0c579ba513d5955f65e01dd73c3f95344",
+        "size_in_bytes": 41183,
+        "sha256_in_prefix": "79ab95178f74643ac6ee61c49efd79b0c579ba513d5955f65e01dd73c3f95344"
+      },
+      {
+        "_path": "site-packages/progressbar/base.py",
+        "path_type": "hardlink",
+        "sha256": "4a1db98173cf7e495d3875b4f71f78e7b31bcdce21321fd8dbdb33e329052a9c",
+        "size_in_bytes": 572,
+        "sha256_in_prefix": "4a1db98173cf7e495d3875b4f71f78e7b31bcdce21321fd8dbdb33e329052a9c"
+      },
+      {
+        "_path": "site-packages/progressbar/env.py",
+        "path_type": "hardlink",
+        "sha256": "2fcf23fcb4913503110f787c0e585aa1bed2547badc366b762595a994ecf8459",
+        "size_in_bytes": 5877,
+        "sha256_in_prefix": "2fcf23fcb4913503110f787c0e585aa1bed2547badc366b762595a994ecf8459"
+      },
+      {
+        "_path": "site-packages/progressbar/multi.py",
+        "path_type": "hardlink",
+        "sha256": "0af706231243d69aae6d12fbc4cc29b8b31f8a538097163adec688281f6bb8fe",
+        "size_in_bytes": 12180,
+        "sha256_in_prefix": "0af706231243d69aae6d12fbc4cc29b8b31f8a538097163adec688281f6bb8fe"
+      },
+      {
+        "_path": "site-packages/progressbar/py.typed",
+        "path_type": "hardlink",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "size_in_bytes": 0,
+        "sha256_in_prefix": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "_path": "site-packages/progressbar/shortcuts.py",
+        "path_type": "hardlink",
+        "sha256": "200dfae1b568c172b7f656b5e146c6051ae8f7aa6f4f26115d30d236442f9db4",
+        "size_in_bytes": 390,
+        "sha256_in_prefix": "200dfae1b568c172b7f656b5e146c6051ae8f7aa6f4f26115d30d236442f9db4"
+      },
+      {
+        "_path": "site-packages/progressbar/terminal/__init__.py",
+        "path_type": "hardlink",
+        "sha256": "054e970900cb7e4cd4a61a6c0ad1df12c93c9cd1a55a01802bfdc1ae80b7dfac",
+        "size_in_bytes": 104,
+        "sha256_in_prefix": "054e970900cb7e4cd4a61a6c0ad1df12c93c9cd1a55a01802bfdc1ae80b7dfac"
+      },
+      {
+        "_path": "site-packages/progressbar/terminal/base.py",
+        "path_type": "hardlink",
+        "sha256": "3516f6763316dfe9b225751664ff2e8814157ae3a14b8dabf6490eeb133409f2",
+        "size_in_bytes": 17290,
+        "sha256_in_prefix": "3516f6763316dfe9b225751664ff2e8814157ae3a14b8dabf6490eeb133409f2"
+      },
+      {
+        "_path": "site-packages/progressbar/terminal/colors.py",
+        "path_type": "hardlink",
+        "sha256": "65efcbdb983798cd8bbfdc4321b968a6038d327109c670f2340bae0d47bb2ed8",
+        "size_in_bytes": 25108,
+        "sha256_in_prefix": "65efcbdb983798cd8bbfdc4321b968a6038d327109c670f2340bae0d47bb2ed8"
+      },
+      {
+        "_path": "site-packages/progressbar/terminal/os_specific/__init__.py",
+        "path_type": "hardlink",
+        "sha256": "1dbdb963801e4d8778fa1fffe7c321618676ce8de757376b16bd927fedb090e1",
+        "size_in_bytes": 578,
+        "sha256_in_prefix": "1dbdb963801e4d8778fa1fffe7c321618676ce8de757376b16bd927fedb090e1"
+      },
+      {
+        "_path": "site-packages/progressbar/terminal/os_specific/posix.py",
+        "path_type": "hardlink",
+        "sha256": "937756c45f09dd8d70eceaa756bc562659ee67c5ebc5e765e368be4d58d92ff7",
+        "size_in_bytes": 346,
+        "sha256_in_prefix": "937756c45f09dd8d70eceaa756bc562659ee67c5ebc5e765e368be4d58d92ff7"
+      },
+      {
+        "_path": "site-packages/progressbar/terminal/os_specific/windows.py",
+        "path_type": "hardlink",
+        "sha256": "15367b096f9d64fc5befeebc1628d28e085d0ac0919c1732baa1246abe9c6972",
+        "size_in_bytes": 4491,
+        "sha256_in_prefix": "15367b096f9d64fc5befeebc1628d28e085d0ac0919c1732baa1246abe9c6972"
+      },
+      {
+        "_path": "site-packages/progressbar/terminal/stream.py",
+        "path_type": "hardlink",
+        "sha256": "f42a0f5fa4170ef0b8d90701f69f94f0b5fd0bdbcdd2bd1a4bde946efd21ae7c",
+        "size_in_bytes": 3685,
+        "sha256_in_prefix": "f42a0f5fa4170ef0b8d90701f69f94f0b5fd0bdbcdd2bd1a4bde946efd21ae7c"
+      },
+      {
+        "_path": "site-packages/progressbar/utils.py",
+        "path_type": "hardlink",
+        "sha256": "820d2119e8798f782d091cc0c3fee362b8fc19d411118f02ae543bc0f6b157e0",
+        "size_in_bytes": 12600,
+        "sha256_in_prefix": "820d2119e8798f782d091cc0c3fee362b8fc19d411118f02ae543bc0f6b157e0"
+      },
+      {
+        "_path": "site-packages/progressbar/widgets.py",
+        "path_type": "hardlink",
+        "sha256": "db03eb7601859ee076c4054638c3351e65e392ae6c97d5f3f921cbf7d8b6e82f",
+        "size_in_bytes": 50610,
+        "sha256_in_prefix": "db03eb7601859ee076c4054638c3351e65e392ae6c97d5f3f921cbf7d8b6e82f"
+      },
+      {
+        "_path": "site-packages/progressbar2-4.5.0.dist-info/INSTALLER",
+        "path_type": "hardlink",
+        "sha256": "d0edee15f91b406f3f99726e44eb990be6e34fd0345b52b910c568e0eef6a2a8",
+        "size_in_bytes": 5,
+        "sha256_in_prefix": "d0edee15f91b406f3f99726e44eb990be6e34fd0345b52b910c568e0eef6a2a8"
+      },
+      {
+        "_path": "site-packages/progressbar2-4.5.0.dist-info/LICENSE",
+        "path_type": "hardlink",
+        "sha256": "7c78749661fc43d837ca30be71068354d678e04b5b18486204fa6c139f9085d0",
+        "size_in_bytes": 1508,
+        "sha256_in_prefix": "7c78749661fc43d837ca30be71068354d678e04b5b18486204fa6c139f9085d0"
+      },
+      {
+        "_path": "site-packages/progressbar2-4.5.0.dist-info/METADATA",
+        "path_type": "hardlink",
+        "sha256": "798aee95f9355cd40c2807dc5a1944066a21a7bce1ec5d3e1c811142a2bc22bb",
+        "size_in_bytes": 16708,
+        "sha256_in_prefix": "798aee95f9355cd40c2807dc5a1944066a21a7bce1ec5d3e1c811142a2bc22bb"
+      },
+      {
+        "_path": "site-packages/progressbar2-4.5.0.dist-info/RECORD",
+        "path_type": "hardlink",
+        "sha256": "1b9da6187d6c19b5a72bf169318d90f3e83ee864bcddfe53b70dcf0cfa354d00",
+        "size_in_bytes": 3479,
+        "sha256_in_prefix": "1b9da6187d6c19b5a72bf169318d90f3e83ee864bcddfe53b70dcf0cfa354d00"
+      },
+      {
+        "_path": "site-packages/progressbar2-4.5.0.dist-info/REQUESTED",
+        "path_type": "hardlink",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "size_in_bytes": 0,
+        "sha256_in_prefix": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "_path": "site-packages/progressbar2-4.5.0.dist-info/WHEEL",
+        "path_type": "hardlink",
+        "sha256": "3d9504c5d7fbd548bfb28ebb417a724ae1ed0a2dfe277c2f1783912ba93f4bc5",
+        "size_in_bytes": 91,
+        "sha256_in_prefix": "3d9504c5d7fbd548bfb28ebb417a724ae1ed0a2dfe277c2f1783912ba93f4bc5"
+      },
+      {
+        "_path": "site-packages/progressbar2-4.5.0.dist-info/direct_url.json",
+        "path_type": "hardlink",
+        "sha256": "69f8acdf643d55fe427d547cfb69201226d35cb15f160666696a17255697459c",
+        "size_in_bytes": 108,
+        "sha256_in_prefix": "69f8acdf643d55fe427d547cfb69201226d35cb15f160666696a17255697459c"
+      },
+      {
+        "_path": "site-packages/progressbar2-4.5.0.dist-info/entry_points.txt",
+        "path_type": "hardlink",
+        "sha256": "663b93d53963e9b7f41d3e2e8b6f518926f452574ae1bb90e6a26dc96aea19c7",
+        "size_in_bytes": 58,
+        "sha256_in_prefix": "663b93d53963e9b7f41d3e2e8b6f518926f452574ae1bb90e6a26dc96aea19c7"
+      },
+      {
+        "_path": "site-packages/progressbar2-4.5.0.dist-info/top_level.txt",
+        "path_type": "hardlink",
+        "sha256": "566f96e4677f248c4cba5f587db683915bb16c3ffea9dfc69a2d6c23c089b1a1",
+        "size_in_bytes": 12,
+        "sha256_in_prefix": "566f96e4677f248c4cba5f587db683915bb16c3ffea9dfc69a2d6c23c089b1a1"
+      },
+      {
+        "_path": "lib/python3.14/site-packages/progressbar/__pycache__/__about__.cpython-314.pyc",
+        "path_type": "pyc_file"
+      },
+      {
+        "_path": "lib/python3.14/site-packages/progressbar/__pycache__/__init__.cpython-314.pyc",
+        "path_type": "pyc_file"
+      },
+      {
+        "_path": "lib/python3.14/site-packages/progressbar/__pycache__/__main__.cpython-314.pyc",
+        "path_type": "pyc_file"
+      },
+      {
+        "_path": "lib/python3.14/site-packages/progressbar/__pycache__/algorithms.cpython-314.pyc",
+        "path_type": "pyc_file"
+      },
+      {
+        "_path": "lib/python3.14/site-packages/progressbar/__pycache__/bar.cpython-314.pyc",
+        "path_type": "pyc_file"
+      },
+      {
+        "_path": "lib/python3.14/site-packages/progressbar/__pycache__/base.cpython-314.pyc",
+        "path_type": "pyc_file"
+      },
+      {
+        "_path": "lib/python3.14/site-packages/progressbar/__pycache__/env.cpython-314.pyc",
+        "path_type": "pyc_file"
+      },
+      {
+        "_path": "lib/python3.14/site-packages/progressbar/__pycache__/multi.cpython-314.pyc",
+        "path_type": "pyc_file"
+      },
+      {
+        "_path": "lib/python3.14/site-packages/progressbar/__pycache__/shortcuts.cpython-314.pyc",
+        "path_type": "pyc_file"
+      },
+      {
+        "_path": "lib/python3.14/site-packages/progressbar/terminal/__pycache__/__init__.cpython-314.pyc",
+        "path_type": "pyc_file"
+      },
+      {
+        "_path": "lib/python3.14/site-packages/progressbar/terminal/__pycache__/base.cpython-314.pyc",
+        "path_type": "pyc_file"
+      },
+      {
+        "_path": "lib/python3.14/site-packages/progressbar/terminal/__pycache__/colors.cpython-314.pyc",
+        "path_type": "pyc_file"
+      },
+      {
+        "_path": "lib/python3.14/site-packages/progressbar/terminal/os_specific/__pycache__/__init__.cpython-314.pyc",
+        "path_type": "pyc_file"
+      },
+      {
+        "_path": "lib/python3.14/site-packages/progressbar/terminal/os_specific/__pycache__/posix.cpython-314.pyc",
+        "path_type": "pyc_file"
+      },
+      {
+        "_path": "lib/python3.14/site-packages/progressbar/terminal/os_specific/__pycache__/windows.cpython-314.pyc",
+        "path_type": "pyc_file"
+      },
+      {
+        "_path": "lib/python3.14/site-packages/progressbar/terminal/__pycache__/stream.cpython-314.pyc",
+        "path_type": "pyc_file"
+      },
+      {
+        "_path": "lib/python3.14/site-packages/progressbar/__pycache__/utils.cpython-314.pyc",
+        "path_type": "pyc_file"
+      },
+      {
+        "_path": "lib/python3.14/site-packages/progressbar/__pycache__/widgets.cpython-314.pyc",
+        "path_type": "pyc_file"
+      }
+    ]
+  },
+  "link": {
+    "source": "/opt/conda/pkgs/progressbar2-4.5.0-pyhd8ed1ab_1",
+    "type": 1
+  }
+}

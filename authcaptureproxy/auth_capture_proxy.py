@@ -213,9 +213,9 @@ class AuthCaptureProxy:
             await self.session.aclose()
         self.session = None
         await self._ensure_session()
-        session = self.session
-        if session is None:  # pragma: no cover
-            return await self._build_response(text="Internal error: HTTP session not initialized")
+        if self.session is None:  # pragma: no cover
+            _LOGGER.error("Internal error: HTTP session not initialized")
+            return
 
         self.last_resp = None
         self.init_query = {}
@@ -378,9 +378,7 @@ class AuthCaptureProxy:
         await self._ensure_session()
         session = self.session
         if session is None:  # pragma: no cover
-            return await self._build_response(
-                text="Internal error: HTTP session not initialized"
-            )
+            return await self._build_response(text="Internal error: HTTP session not initialized")
 
         async def _process_multipart(reader: MultipartReader, writer: MultipartWriter) -> None:
             """Process multipart.
