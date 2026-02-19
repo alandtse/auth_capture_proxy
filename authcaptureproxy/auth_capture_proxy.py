@@ -67,8 +67,23 @@ class AuthCaptureProxy:
         )
         # NOTE: Do not instantiate httpx.AsyncClient inside Home Assistant's event loop.
         # Some SSL initialization (e.g., load_verify_locations) is blocking and will be flagged.
-        # The session is created lazily via _ensure_session(), off the event loop using asyncio.to_thread().
-        self.session: Optional[httpx.AsyncClient] = session
+        #
+        # Keep historical behavior when NOT running inside an event loop: create a session immediately.
+        # When running inside an event loop (e.g., Home Assistant config flow), defer and create lazily
+        # via _ensure_session() using asyncio.to_thread().
+        in_event_loop = False
+        try:
+            asyncio.get_running_loop()
+            in_event_loop = True
+        except RuntimeError:
+            in_event_loop = False
+
+        if session is not None:
+            self.session: Optional[httpx.AsyncClient] = session
+        elif in_event_loop:
+            self.session = None
+        else:
+            self.session = self.session_factory()
         self._proxy_url: URL = proxy_url
         self._host_url: URL = host_url
         self._port: int = proxy_url.explicit_port if proxy_url.explicit_port else 0  # type: ignore
@@ -361,6 +376,11 @@ class AuthCaptureProxy:
 
         # Ensure the HTTP session is created off the event loop thread.
         await self._ensure_session()
+        session = self.session
+        if session is None:  # pragma: no cover
+            return await self._build_response(
+                text="Internal error: HTTP session not initialized"
+            )
 
         async def _process_multipart(reader: MultipartReader, writer: MultipartWriter) -> None:
             """Process multipart.
