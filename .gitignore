@@ -48,6 +48,7 @@ cython_debug/
 docs/autoapi
 cov.xml
 .coverage.*
+oryx-build-commands.txt
 
 
 # Hidden files that are definitely unwanted (redundant)
