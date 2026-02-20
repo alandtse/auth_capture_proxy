@@ -65,7 +65,25 @@ class AuthCaptureProxy:
         self.session_factory: Callable[[], httpx.AsyncClient] = session_factory or (
             lambda: httpx.AsyncClient(verify=ssl_context)
         )
-        self.session: httpx.AsyncClient = session if session else self.session_factory()
+        # NOTE: Do not instantiate httpx.AsyncClient inside the event loop.
+        # Some SSL initialization (e.g., load_verify_locations) is blocking and will be flagged.
+        #
+        # Keep historical behavior when NOT running inside an event loop: create a session immediately.
+        # When running inside an event loop, defer and create lazily
+        # via _ensure_session() using asyncio.to_thread().
+        try:
+            asyncio.get_running_loop()
+            in_event_loop = True
+        except RuntimeError:
+            in_event_loop = False
+
+        if session is not None:
+            self.session: Optional[httpx.AsyncClient] = session
+        elif in_event_loop:
+            self.session = None
+        else:
+            self.session = self.session_factory()
+        self._session_lock = asyncio.Lock()
         self._proxy_url: URL = proxy_url
         self._host_url: URL = host_url
         self._port: int = proxy_url.explicit_port if proxy_url.explicit_port else 0  # type: ignore
@@ -193,14 +211,33 @@ class AuthCaptureProxy:
         """
         if self.session:
             await self.session.aclose()
-        self.session = self.session_factory()
+        self.session = None
+        # Reset data fields unconditionally so state is clean regardless of session outcome.
         self.last_resp = None
         self.init_query = {}
         self.query = {}
         self.data = {}
         self._active = False
         self._all_handler_active = True
+        await self._ensure_session()
+        if self.session is None:  # pragma: no cover
+            _LOGGER.error("Internal error: HTTP session not initialized")
+            return
+
         _LOGGER.debug("Proxy data reset.")
+
+    async def _ensure_session(self) -> None:
+        """Ensure an httpx session exists.
+
+        httpx.AsyncClient() initialization may perform blocking SSL work
+        (e.g. SSLContext.load_verify_locations), so the client is created
+        in a background thread.
+        """
+        if self.session is not None:
+            return
+        async with self._session_lock:
+            if self.session is None:
+                self.session = await asyncio.to_thread(self.session_factory)
 
     def refresh_tests(self) -> None:
         """Refresh tests.
@@ -340,6 +377,14 @@ class AuthCaptureProxy:
             host_url = kwargs.pop("host_url")
         else:
             host_url = self._host_url
+
+        # Ensure the HTTP session is created off the event loop thread.
+        await self._ensure_session()
+        session = self.session
+        if session is None:  # pragma: no cover
+            return await self._build_response(
+                text="Internal error: HTTP session not initialized", status=500
+            )
 
         async def _process_multipart(reader: MultipartReader, writer: MultipartWriter) -> None:
             """Process multipart.
@@ -530,15 +575,15 @@ class AuthCaptureProxy:
                 method,
                 site,
                 req_headers,
-                self.session.cookies.jar,
+                session.cookies.jar,
             )
             try:
                 if mpwriter:
-                    resp = await getattr(self.session, method)(
+                    resp = await getattr(session, method)(
                         site, data=mpwriter, headers=req_headers, follow_redirects=True
                     )
                 elif data:
-                    resp = await getattr(self.session, method)(
+                    resp = await getattr(session, method)(
                         site, data=data, headers=req_headers, follow_redirects=True
                     )
                 elif raw_body is not None:
@@ -551,7 +596,7 @@ class AuthCaptureProxy:
                     # Preserve the original Content-Type for raw body requests
                     if request.content_type and "Content-Type" not in req_headers:
                         req_headers["Content-Type"] = request.content_type
-                    resp = await getattr(self.session, method)(
+                    resp = await getattr(session, method)(
                         site, content=raw_body, headers=req_headers, follow_redirects=True
                     )
                 elif json_data:
@@ -559,11 +604,11 @@ class AuthCaptureProxy:
                         # remove proxy headers
                         if req_headers.get(item):
                             req_headers.pop(item)
-                    resp = await getattr(self.session, method)(
+                    resp = await getattr(session, method)(
                         site, json=json_data, headers=req_headers, follow_redirects=True
                     )
                 else:
-                    resp = await getattr(self.session, method)(
+                    resp = await getattr(session, method)(
                         site, headers=req_headers, follow_redirects=True
                     )
             except httpx.ConnectError as ex:
@@ -811,6 +856,7 @@ class AuthCaptureProxy:
         if self.session:
             _LOGGER.debug("Closing session")
             await self.session.aclose()
+            self.session = None
             _LOGGER.debug("Session closed")
         self._active = False
         _LOGGER.debug("Proxy stopped")

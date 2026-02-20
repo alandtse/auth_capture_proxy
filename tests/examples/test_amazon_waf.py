@@ -20,9 +20,7 @@ def _make_ctx(**kwargs):
     """Create an InterceptContext with Amazon-like defaults."""
     proxy = MagicMock()
     proxy._host_url = HOST_URL
-    proxy._build_response = MagicMock(
-        side_effect=lambda **kw: _async_response(kw.get("text", ""))
-    )
+    proxy._build_response = MagicMock(side_effect=lambda **kw: _async_response(kw.get("text", "")))
     defaults = dict(
         request=MagicMock(),
         proxy=proxy,
@@ -47,9 +45,7 @@ async def test_on_request_amzn_host_routing():
     """__amzn_host__ marker routes to correct host."""
     interceptor = AmazonWAFInterceptor()
     req = MagicMock()
-    req.url = URL(
-        "https://192.168.1.100:8123/auth/proxy/__amzn_host__fls-eu.amazon.it/1/batch/1"
-    )
+    req.url = URL("https://192.168.1.100:8123/auth/proxy/__amzn_host__fls-eu.amazon.it/1/batch/1")
     req.query_string = ""
     ctx = _make_ctx(request=req)
 
@@ -63,9 +59,7 @@ async def test_on_request_amzn_host_with_query():
     """__amzn_host__ routing preserves query string."""
     interceptor = AmazonWAFInterceptor()
     req = MagicMock()
-    req.url = URL(
-        "https://192.168.1.100:8123/auth/proxy/__amzn_host__fls-eu.amazon.it/path"
-    )
+    req.url = URL("https://192.168.1.100:8123/auth/proxy/__amzn_host__fls-eu.amazon.it/path")
     req.query_string = "key=value&other=1"
     ctx = _make_ctx(request=req)
 
@@ -78,9 +72,7 @@ async def test_on_request_blocked_host():
     """Non-Amazon host returns short_circuit error."""
     interceptor = AmazonWAFInterceptor()
     req = MagicMock()
-    req.url = URL(
-        "https://192.168.1.100:8123/auth/proxy/__amzn_host__evil.example.com/steal"
-    )
+    req.url = URL("https://192.168.1.100:8123/auth/proxy/__amzn_host__evil.example.com/steal")
     req.query_string = ""
     ctx = _make_ctx(request=req)
 
@@ -157,7 +149,7 @@ async def test_on_request_data_invalid_aamation_with_totp():
         proxy=proxy,
         site="/ap/cvf/verify",
         data={
-            "cvf_aamation_response_token": "invalid_not_base64",
+            "cvf_aamation_response_token": "invalid_not_base64",  # nosec B105
             "cvf_aamation_error_code": "NetworkError",
             "cvf_captcha_captcha_action": "",
         },
@@ -180,7 +172,7 @@ async def test_on_request_data_invalid_aamation_no_totp():
         proxy=proxy,
         site="/ap/cvf/verify",
         data={
-            "cvf_aamation_response_token": "bad",
+            "cvf_aamation_response_token": "bad",  # nosec B105
             "cvf_aamation_error_code": "err",
             "cvf_captcha_captcha_action": "x",
         },
@@ -258,9 +250,9 @@ async def test_on_ajax_html_aaut_injection():
     """P shim injected into /aaut/verify/cvf response."""
     interceptor = AmazonWAFInterceptor()
     html = (
-        '<html><head></head><body>'
+        "<html><head></head><body>"
         '<script src="https://abc.token.awswaf.com/captcha.js"></script>'
-        '</body></html>'
+        "</body></html>"
     )
     req = MagicMock()
     req.url = URL("https://192.168.1.100:8123/auth/proxy/aaut/verify/cvf")
@@ -310,7 +302,7 @@ async def test_on_ajax_html_no_body():
 async def test_on_page_html_cvf_injection():
     """Submit blocker + AJAX proxy injected into CVF page."""
     interceptor = AmazonWAFInterceptor()
-    html = '<html><head><script>var x=1;</script></head><body>CVF</body></html>'
+    html = "<html><head><script>var x=1;</script></head><body>CVF</body></html>"
     resp = MagicMock(spec=httpx.Response)
     resp.url = httpx.URL("https://www.amazon.it/ap/cvf/request")
     ctx = _make_ctx(response=resp, text=html, content_type="text/html")
@@ -329,7 +321,7 @@ async def test_on_page_html_cvf_injection():
 async def test_on_page_html_non_cvf():
     """Non-CVF page: text unchanged."""
     interceptor = AmazonWAFInterceptor()
-    html = '<html><head><script>var x=1;</script></head><body>Signin</body></html>'
+    html = "<html><head><script>var x=1;</script></head><body>Signin</body></html>"
     resp = MagicMock(spec=httpx.Response)
     resp.url = httpx.URL("https://www.amazon.it/ap/signin")
     ctx = _make_ctx(response=resp, text=html, content_type="text/html")

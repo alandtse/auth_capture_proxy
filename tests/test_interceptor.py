@@ -1,11 +1,11 @@
 """Tests for the interceptor module."""
 
-import pytest
 from unittest.mock import MagicMock
+
+import pytest
 from yarl import URL
 
 from authcaptureproxy.interceptor import BaseInterceptor, InterceptContext
-
 
 PROXY_URL = URL("https://www.proxy.com/proxy")
 HOST_URL = URL("https://www.host.com")
@@ -71,6 +71,7 @@ def test_intercept_context_required_fields():
 @pytest.mark.asyncio
 async def test_custom_interceptor_override():
     """A custom interceptor can override individual hooks."""
+
     class TestInterceptor(BaseInterceptor):
         async def on_request(self, ctx):
             ctx.site = "https://custom.example.com/path"

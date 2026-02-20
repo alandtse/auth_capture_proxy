@@ -136,7 +136,7 @@ async def test_handler_interceptor_modifies_data():
     proxy.interceptors = [DataModifier()]
     req = _make_request(method="POST")
     req.has_body = True
-    req.post = AsyncMock(return_value=CIMultiDict({"password": "test123"}))
+    req.post = AsyncMock(return_value=CIMultiDict({"password": "test123"}))  # nosec B105
     resp = _make_response()
     mock_session.post = AsyncMock(return_value=resp)
 

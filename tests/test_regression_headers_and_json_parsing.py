@@ -1,9 +1,8 @@
 import asyncio
-
 from typing import Any
-import pytest
-import httpx
 
+import httpx
+import pytest
 from aiohttp.streams import StreamReader
 from aiohttp.test_utils import make_mocked_request
 from multidict import CIMultiDict

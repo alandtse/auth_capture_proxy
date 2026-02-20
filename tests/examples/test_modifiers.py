@@ -1,12 +1,13 @@
 """Test modifiers."""
 
-from yarl import URL
-from bs4 import BeautifulSoup as bs  # type: ignore
-import authcaptureproxy.examples.modifiers as modifiers
-from typing import Text
 import random
-import pytest
+from typing import Text
 
+import pytest
+from bs4 import BeautifulSoup as bs  # type: ignore
+from yarl import URL
+
+import authcaptureproxy.examples.modifiers as modifiers
 
 EMPTY_URL = URL("")
 VALID_URL = URL("http://www.google.com")
@@ -139,7 +140,7 @@ def build_random_html(size: int = 10, url: Text = HOST_URL_WITH_PATH) -> Text:
     for _ in range(size):
         tag = random.choice(list(KNOWN_URLS_ATTRS))  # nosec
         attribute = KNOWN_URLS_ATTRS[tag]
-        new_tag = soup.new_tag(tag, **{attribute: url})
+        new_tag = soup.new_tag(tag, attrs={attribute: str(url)})
         soup.append(new_tag)
     return str(soup)
 

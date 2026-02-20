@@ -104,7 +104,7 @@ async def proxy_example(
             asyncio.create_task(proxy_obj.stop_proxy(3))  # stop proxy in 3 seconds
             if callback_url:
                 return URL(callback_url)  # 302 redirect
-            return f"Successfully logged in {data.get('email')} and {data.get('password')}. Please close the window.<br /><b>Post data</b><br />{json.dumps(data)}<br /><b>Query Data:</b><br />{json.dumps(query)}<br /><b>Cookies:</b></br>{json.dumps(list(proxy_obj.session.cookies.items()))}"
+            return f"Successfully logged in {data.get('email')} and {data.get('password')}. Please close the window.<br /><b>Post data</b><br />{json.dumps(data)}<br /><b>Query Data:</b><br />{json.dumps(query)}<br /><b>Cookies:</b></br>{json.dumps(list(proxy_obj.session.cookies.items()) if proxy_obj.session else [])}"
 
     await proxy_obj.start_proxy()
     # add tests and modifiers after the proxy has started so that port data is available for self.access_url()
@@ -119,7 +119,7 @@ async def proxy_example(
                 "autofill": partial(
                     autofill,
                     {
-                        "password": "CHANGEME",
+                        "password": "CHANGEME",  # nosec
                     },
                 )
             }

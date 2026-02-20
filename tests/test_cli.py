@@ -3,10 +3,10 @@
 Copyright 2021 Alan D. Tse.
 
 """
+
 import pytest
 
-from authcaptureproxy import __copyright__
-from authcaptureproxy import cli
+from authcaptureproxy import __copyright__, cli
 
 
 class TestCli:

@@ -27,6 +27,10 @@ tmp/
 *.so
 
 # Python temp and build files
+venv/
+.venv/
+env/
+
 docs/html/
 __pycache__/
 __pypackages__/
@@ -44,6 +48,7 @@ cython_debug/
 docs/autoapi
 cov.xml
 .coverage.*
+oryx-build-commands.txt
 
 
 # Hidden files that are definitely unwanted (redundant)
