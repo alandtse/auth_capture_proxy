@@ -233,7 +233,6 @@ class AuthCaptureProxy:
         (e.g. SSLContext.load_verify_locations), so the client is created
         in a background thread.
         """
-
         if self.session is not None:
             return
         async with self._session_lock:
