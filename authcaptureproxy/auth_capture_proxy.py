@@ -65,11 +65,11 @@ class AuthCaptureProxy:
         self.session_factory: Callable[[], httpx.AsyncClient] = session_factory or (
             lambda: httpx.AsyncClient(verify=ssl_context)
         )
-        # NOTE: Do not instantiate httpx.AsyncClient inside Home Assistant's event loop.
+        # NOTE: Do not instantiate httpx.AsyncClient inside the event loop.
         # Some SSL initialization (e.g., load_verify_locations) is blocking and will be flagged.
         #
         # Keep historical behavior when NOT running inside an event loop: create a session immediately.
-        # When running inside an event loop (e.g., Home Assistant config flow), defer and create lazily
+        # When running inside an event loop, defer and create lazily
         # via _ensure_session() using asyncio.to_thread().
         try:
             asyncio.get_running_loop()
@@ -212,26 +212,28 @@ class AuthCaptureProxy:
         if self.session:
             await self.session.aclose()
         self.session = None
-        await self._ensure_session()
-        if self.session is None:  # pragma: no cover
-            _LOGGER.error("Internal error: HTTP session not initialized")
-            return
-
+        # Reset data fields unconditionally so state is clean regardless of session outcome.
         self.last_resp = None
         self.init_query = {}
         self.query = {}
         self.data = {}
         self._active = False
         self._all_handler_active = True
+        await self._ensure_session()
+        if self.session is None:  # pragma: no cover
+            _LOGGER.error("Internal error: HTTP session not initialized")
+            return
+
         _LOGGER.debug("Proxy data reset.")
 
     async def _ensure_session(self) -> None:
-        """Ensure an httpx session exists and is created off the event loop.
+        """Ensure an httpx session exists.
 
-        httpx.AsyncClient() initialization may perform blocking SSL work (e.g.,
-        SSLContext.load_verify_locations). Under Python 3.13, Home Assistant will
-        flag such blocking operations if they occur in the event loop thread.
+        httpx.AsyncClient() initialization may perform blocking SSL work
+        (e.g. SSLContext.load_verify_locations), so the client is created
+        in a background thread.
         """
+
         if self.session is not None:
             return
         async with self._session_lock:
