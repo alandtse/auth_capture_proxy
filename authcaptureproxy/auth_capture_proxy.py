@@ -71,12 +71,11 @@ class AuthCaptureProxy:
         # Keep historical behavior when NOT running inside an event loop: create a session immediately.
         # When running inside an event loop (e.g., Home Assistant config flow), defer and create lazily
         # via _ensure_session() using asyncio.to_thread().
-        in_event_loop = False
         try:
             asyncio.get_running_loop()
             in_event_loop = True
         except RuntimeError:
-            pass
+            in_event_loop = False
 
         if session is not None:
             self.session: Optional[httpx.AsyncClient] = session
