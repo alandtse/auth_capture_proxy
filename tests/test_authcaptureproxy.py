@@ -5,7 +5,7 @@ SPDX-License-Identifier: Apache-2.0
 
 """
 
-from unittest.mock import patch, create_autospec
+from unittest.mock import create_autospec, patch
 
 from httpx import AsyncClient
 from pytest import fixture
