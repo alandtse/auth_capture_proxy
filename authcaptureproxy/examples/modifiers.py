@@ -231,11 +231,11 @@ async def find_urls_bs4(
                         )
             else:
                 raw_value = html_tag.get(attribute)
-                if not isinstance(raw_value, str) or not raw_value:
+                if not isinstance(raw_value, str):
                     url = None
                 else:
                     try:
-                        url = URL(raw_value)
+                        url = URL(raw_value)  # allow "" (URL(""))
                     except Exception:
                         url = None
                 if (
