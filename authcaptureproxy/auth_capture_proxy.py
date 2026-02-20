@@ -76,7 +76,7 @@ class AuthCaptureProxy:
             asyncio.get_running_loop()
             in_event_loop = True
         except RuntimeError:
-            in_event_loop = False
+            pass
 
         if session is not None:
             self.session: Optional[httpx.AsyncClient] = session
@@ -84,6 +84,7 @@ class AuthCaptureProxy:
             self.session = None
         else:
             self.session = self.session_factory()
+        self._session_lock = asyncio.Lock()
         self._proxy_url: URL = proxy_url
         self._host_url: URL = host_url
         self._port: int = proxy_url.explicit_port if proxy_url.explicit_port else 0  # type: ignore
@@ -232,9 +233,11 @@ class AuthCaptureProxy:
         SSLContext.load_verify_locations). Under Python 3.13, Home Assistant will
         flag such blocking operations if they occur in the event loop thread.
         """
-        if self.session is None:
-            self.session = await asyncio.to_thread(self.session_factory)
-
+        if self.session is not None:
+            return
+        async with self._session_lock:
+            if self.session is None:
+                self.session = await asyncio.to_thread(self.session_factory)
     def refresh_tests(self) -> None:
         """Refresh tests.
 
