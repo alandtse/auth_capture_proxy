@@ -237,6 +237,7 @@ class AuthCaptureProxy:
         async with self._session_lock:
             if self.session is None:
                 self.session = await asyncio.to_thread(self.session_factory)
+
     def refresh_tests(self) -> None:
         """Refresh tests.
 
@@ -380,7 +381,9 @@ class AuthCaptureProxy:
         await self._ensure_session()
         session = self.session
         if session is None:  # pragma: no cover
-            return await self._build_response(text="Internal error: HTTP session not initialized")
+            return await self._build_response(
+                text="Internal error: HTTP session not initialized", status=500
+            )
 
         async def _process_multipart(reader: MultipartReader, writer: MultipartWriter) -> None:
             """Process multipart.
