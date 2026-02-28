@@ -220,7 +220,7 @@ async def find_urls_bs4(
                     url = None
                 if url is not None and str(url) not in exceptions.get(tag, []):
                     replacement = await run_func(modifier, name="", url=url)
-                    new_value = re.sub(pattern, replacement, attribute_value)
+                    new_value = re.sub(pattern, str(replacement), attribute_value)
                     old_value = html_tag.get(attribute)
                     html_tag[attribute] = new_value
                     if str(old_value) != str(html_tag.get(attribute)):
