@@ -236,7 +236,7 @@ async def find_urls_bs4(
                 else:
                     try:
                         url = URL(raw_value)  # allow "" (URL(""))
-                    except (TypeError, ValueError)::
+                    except (TypeError, ValueError):
                         url = None
                 if (
                     url is not None
