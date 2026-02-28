@@ -216,7 +216,7 @@ async def find_urls_bs4(
                     continue
                 try:
                     url: Optional[URL] = URL(match.group(0))
-                except Exception:
+                except (TypeError, ValueError):
                     url = None
                 if url is not None and str(url) not in exceptions.get(tag, []):
                     replacement = await run_func(modifier, name="", url=url)
@@ -236,7 +236,7 @@ async def find_urls_bs4(
                 else:
                     try:
                         url = URL(raw_value)  # allow "" (URL(""))
-                    except Exception:
+                    except (TypeError, ValueError)::
                         url = None
                 if (
                     url is not None
