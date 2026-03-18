@@ -207,7 +207,7 @@ async def find_urls_bs4(
                 # https://developer.mozilla.org/en-US/docs/Web/CSS/background-image
                 # this currently only handles background-image as the first attribute
                 # TODO: Rewrite regex to handle general case
-                pattern = r"(?<=style=[\"']background-image:url\([\"']).*(?=[\"']\))"
+                pattern = r"(?<=background-image:url\([\"']).*?(?=[\"']\))"
                 attribute_value = html_tag.get(attribute)
                 if not isinstance(attribute_value, str):
                     continue
