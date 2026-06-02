@@ -7,7 +7,7 @@ import posixpath
 import re
 from functools import partial
 from json import JSONDecodeError
-from ssl import SSLContext, create_default_context
+from ssl import SSLContext
 from typing import Any, Callable, Dict, List, Optional, Set, Text, Tuple, Union
 
 import httpx
@@ -31,9 +31,6 @@ from authcaptureproxy.helper import (
 )
 from authcaptureproxy.interceptor import BaseInterceptor, InterceptContext
 from authcaptureproxy.stackoverflow import get_open_port
-
-# Pre-configure SSL context
-ssl_context = create_default_context()
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -63,7 +60,7 @@ class AuthCaptureProxy:
         """
         self._preserve_headers = preserve_headers
         self.session_factory: Callable[[], httpx.AsyncClient] = session_factory or (
-            lambda: httpx.AsyncClient(verify=ssl_context)
+            lambda: httpx.AsyncClient(verify=True)
         )
         self.session: httpx.AsyncClient = session if session else self.session_factory()
         self._proxy_url: URL = proxy_url
