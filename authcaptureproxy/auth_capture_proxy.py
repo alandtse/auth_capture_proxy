@@ -896,18 +896,25 @@ class AuthCaptureProxy:
             result["Referer"] = self._swap_proxy_and_host(
                 result.get("Referer", ""), domain_only=True
             )
-        for item in [
-            "Content-Length",
-            "X-Forwarded-For",
-            "X-Forwarded-Host",
-            "X-Forwarded-Port",
-            "X-Forwarded-Proto",
-            "X-Forwarded-Scheme",
-            "X-Forwarded-Server",
-            "X-Real-IP",
-        ]:
-            # remove proxy headers
-            if result.get(item):
+        # Remove hop-by-hop and reverse-proxy/CDN headers that must not be forwarded
+        # upstream. Besides leaking client info, these can carry non-ASCII values (e.g.
+        # Cloudflare's "cf-ipcity: Mérida") that break httpx header encoding. Matching is
+        # case-insensitive because HTTP/2 front-ends (e.g. Cloudflare) lowercase header
+        # names, so exact-case matching would silently miss them.
+        proxy_headers = {
+            "content-length",
+            "x-forwarded-for",
+            "x-forwarded-host",
+            "x-forwarded-port",
+            "x-forwarded-proto",
+            "x-forwarded-scheme",
+            "x-forwarded-server",
+            "x-real-ip",
+            "cdn-loop",
+        }
+        for item in list(result):
+            lowered = item.lower()
+            if lowered in proxy_headers or lowered.startswith("cf-"):
                 result.pop(item)
         result.update(self.headers if self.headers else {})
         _LOGGER.debug("Final headers %s", result)
