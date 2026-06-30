@@ -5,7 +5,6 @@ Python Package for auth capture proxy.
 Helper files.
 """
 
-import ast
 import json
 import logging
 import re
@@ -39,7 +38,7 @@ def print_resp(resp: Union[httpx.Response, ClientResponse]) -> None:
     method = resp.request.method
     status = resp.status_code
     reason = resp.reason_phrase
-    headers = ast.literal_eval(str(resp.request.headers)[8:-1])
+    headers = dict(resp.request.headers)
     cookies = {}
     if headers.get("cookie"):
         cookie: SimpleCookie = SimpleCookie()
@@ -74,9 +73,7 @@ def print_resp_aiohttp(resp: ClientResponse) -> None:
     method = resp.request_info.method
     status = resp.status
     reason = resp.reason
-    headers = ast.literal_eval(
-        str(resp.request_info.headers).replace("<CIMultiDictProxy(", "{").replace(")>", "}")
-    )
+    headers = dict(resp.request_info.headers)
     cookies = {}
     if headers.get("Cookie"):
         cookie: SimpleCookie = SimpleCookie()

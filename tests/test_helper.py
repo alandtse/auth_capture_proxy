@@ -1,4 +1,6 @@
 """Test the auth_capture proxy helper."""
+
+import httpx
 from httpx import Response
 from multidict import MultiDict, MultiDictProxy
 from yarl import URL
@@ -92,6 +94,24 @@ def test_get_content_type():
         )
         == "application/json"
     )
+
+
+def test_print_resp_handles_non_ascii_headers():
+    """print_resp must not raise on non-ASCII header values.
+
+    When a request carries a non-ASCII header (e.g. Cloudflare's ``cf-ipcity: Mérida``),
+    httpx stores it with ``iso-8859-1`` encoding and adds an ``encoding=`` suffix to the
+    Headers repr. The old repr-slicing parse (``ast.literal_eval(str(headers)[8:-1])``)
+    raised SyntaxError on that suffix.
+    """
+    request = httpx.Request(
+        "GET",
+        "https://www.amazon.com",
+        headers={"cf-ipcity": "Mérida".encode("latin-1"), "cookie": "session-id=abc"},
+    )
+    response = httpx.Response(200, request=request, text="ok")
+    # Should not raise.
+    helper.print_resp(response)
 
 
 def test_convert_multidict_to_dict():

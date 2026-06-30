@@ -3,6 +3,7 @@
 Copyright 2021 Alan D. Tse.
 
 """
+
 import pytest
 
 from authcaptureproxy import __copyright__

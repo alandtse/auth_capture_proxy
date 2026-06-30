@@ -64,6 +64,37 @@ def _make_response(text="<html><body>Hello</body></html>", status_code=200, url=
 
 
 @pytest.mark.asyncio
+async def test_modify_headers_strips_cloudflare_and_proxy_headers():
+    """Edge/CDN headers must not be forwarded upstream.
+
+    Reverse proxies and CDNs (nginx, Cloudflare) inject headers like ``cf-ipcity`` and
+    ``x-forwarded-for``. These leak client info and can carry non-ASCII values (e.g.
+    ``cf-ipcity: Mérida``) that crash httpx header encoding. They must be stripped, and
+    matching must be case-insensitive since HTTP/2 (Cloudflare) lowercases header names.
+    """
+    proxy, _ = _make_proxy()
+    req = _make_request(
+        headers={
+            "cf-ipcity": "Mérida",  # non-ASCII; previously crashed httpx
+            "cf-region": "Yucatán",
+            "cdn-loop": "cloudflare; loops=1",
+            "x-forwarded-for": "187.0.0.1",  # lowercase; exact-case strip missed it
+            "Accept": "text/html",
+        }
+    )
+
+    result = await proxy.modify_headers(HOST_URL, req)
+
+    lowered = {k.lower() for k in result}
+    assert not any(k.startswith("cf-") for k in lowered)
+    assert "cdn-loop" not in lowered
+    assert "x-forwarded-for" not in lowered
+    assert result.get("Accept") == "text/html"
+    # Surviving headers must be encodable by httpx (no UnicodeEncodeError).
+    httpx.Headers(result)
+
+
+@pytest.mark.asyncio
 async def test_handler_no_interceptors():
     """Basic GET proxies correctly without interceptors."""
     proxy, mock_session = _make_proxy()
