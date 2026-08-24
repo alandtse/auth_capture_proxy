@@ -37,14 +37,14 @@ repos:
       - id: commitizen
         stages: ["commit-msg"]
     repo: https://github.com/commitizen-tools/commitizen
-    rev: v4.13.7
+    rev: v4.18.0
 
   # --- Strip output from .ipynb files ---
   - hooks:
       - id: nbstripout
         files: ".ipynb"
     repo: https://github.com/kynan/nbstripout
-    rev: 0.9.0
+    rev: 0.9.1
 
   # --- Linters ---
   - hooks:
@@ -54,7 +54,7 @@ repos:
   - hooks:
       - id: black
     repo: https://github.com/psf/black
-    rev: 26.1.0
+    rev: 26.5.1
   - repo: https://github.com/pre-commit/mirrors-prettier
     hooks:
       - id: prettier
