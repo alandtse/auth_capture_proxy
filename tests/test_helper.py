@@ -1,4 +1,5 @@
 """Test the auth_capture proxy helper."""
+
 from httpx import Response
 from multidict import MultiDict, MultiDictProxy
 from yarl import URL
