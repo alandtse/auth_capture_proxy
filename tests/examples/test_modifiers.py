@@ -7,7 +7,6 @@ from typing import Text
 import random
 import pytest
 
-
 EMPTY_URL = URL("")
 VALID_URL = URL("http://www.google.com")
 RELATIVE_URL = URL("/test/asdf")
