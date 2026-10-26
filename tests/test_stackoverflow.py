@@ -1,4 +1,5 @@
 """Test the auth_capture_proxy stackoverflow."""
+
 import random
 import string
 from unittest.mock import patch
