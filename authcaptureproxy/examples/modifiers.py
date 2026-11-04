@@ -8,7 +8,7 @@ Example modifiers.
 import logging
 import re
 from functools import partial
-from typing import Callable, Dict, List, Optional, Text
+from typing import Callable, Dict, List, Optional, Text, cast
 
 from bs4 import BeautifulSoup  # type: ignore[import]
 from yarl import URL
@@ -208,7 +208,7 @@ async def find_urls_bs4(
                 # this currently only handles background-image as the first attribute
                 # TODO: Rewrite regex to handle general case
                 pattern = r"(?<=style=[\"']background-image:url\([\"']).*(?=[\"']\))"
-                attribute_value = html_tag.get(attribute)
+                attribute_value = cast(str, html_tag.get(attribute))
                 url: Optional[URL] = URL(str(re.search(pattern, attribute_value)))
                 if url is not None and url not in exceptions.get(tag, []):
                     new_value = re.sub(
@@ -225,7 +225,11 @@ async def find_urls_bs4(
                             html_tag[attribute],
                         )
             else:
-                url = URL(html_tag.get(attribute)) if html_tag.get(attribute) is not None else None
+                url = (
+                    URL(cast(str, html_tag.get(attribute)))
+                    if html_tag.get(attribute) is not None
+                    else None
+                )
                 if (
                     url is not None
                     and not str(url).startswith("data:")
