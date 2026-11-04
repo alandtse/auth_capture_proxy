@@ -149,7 +149,7 @@ async def test_on_request_data_invalid_aamation_with_totp():
         proxy=proxy,
         site="/ap/cvf/verify",
         data={
-            "cvf_aamation_response_token": "invalid_not_base64",
+            "cvf_aamation_response_token": "invalid_not_base64",  # nosec B105: Test fixture.
             "cvf_aamation_error_code": "NetworkError",
             "cvf_captcha_captcha_action": "",
         },
@@ -172,7 +172,7 @@ async def test_on_request_data_invalid_aamation_no_totp():
         proxy=proxy,
         site="/ap/cvf/verify",
         data={
-            "cvf_aamation_response_token": "bad",
+            "cvf_aamation_response_token": "bad",  # nosec B105: Test fixture.
             "cvf_aamation_error_code": "err",
             "cvf_captcha_captcha_action": "x",
         },
