@@ -151,7 +151,7 @@ branches:
         strict: true
         # Required. The list of status checks to require in order to merge into this branch
         contexts:
-          - "build (3.9)"
+          - "build (3.11)"
           - "markdown-link-check"
       # Required. Enforce all configured restrictions for administrators.
       # Set to true to enforce required status checks for repository administrators.
