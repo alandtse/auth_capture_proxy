@@ -138,7 +138,7 @@ def build_random_html(size: int = 10, url: Text = HOST_URL_WITH_PATH) -> Text:
     for _ in range(size):
         tag = random.choice(list(KNOWN_URLS_ATTRS))  # nosec
         attribute = KNOWN_URLS_ATTRS[tag]
-        new_tag = soup.new_tag(tag, **{attribute: url})
+        new_tag = soup.new_tag(tag, attrs={attribute: url})
         soup.append(new_tag)
     return str(soup)
 

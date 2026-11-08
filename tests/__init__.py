@@ -84,7 +84,8 @@ class TestResources:
         Yields:
             The created directory as a ``pathlib.Path``
         """
-        path = TestResources._temp_dir / ("%0x" % random.getrandbits(64))
+        # Test resource names do not require cryptographic randomness.
+        path = TestResources._temp_dir / ("%0x" % random.getrandbits(64))  # nosec B311
         if path.exists():
             cls._delete_tree(path, surefire=force_delete)
         if copy_resource is None:
