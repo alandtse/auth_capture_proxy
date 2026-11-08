@@ -55,7 +55,7 @@ include = ["README.md", "LICENSE.txt", "CHANGELOG.md"]
 
 [tool.poetry.group.dev.dependencies]
 bandit = ">=1.7, <2.0"
-black = ">=20.8b1"
+black = ">=26.10.1"
 coverage = { extras = ["toml"], version = "^5" }
 flake8 = ">=3.9, <8.0"
 flake8-bugbear = ">=20.11, <25.0"
