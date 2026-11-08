@@ -30,7 +30,7 @@ def _form(action, field, app_action):
 async def test_claim_then_password(domain, password_action):
     """Rewrite both forms and retain redirect cookies and each submitted payload."""
     origin = f"https://{domain}"
-    if password_action == "absolute":
+    if password_action == "absolute":  # nosec B105 - synthetic test value
         password_action = origin + "/ap/signin"
     calls = []
 
