@@ -147,9 +147,11 @@ filename = "NEWS.md"
 [tool.semantic_release]
 version_toml = ["pyproject.toml:project.version"]
 major_on_zero = true
-upload_to_pypi = true
-upload_to_vcs_release = true
+assets = ["poetry.lock"]
 build_command = "pip install poetry && poetry lock && poetry build"
+
+[tool.semantic_release.publish]
+upload_to_vcs_release = true
 
 [tool.semantic_release.branches.main]
 match = "(main|master)"
