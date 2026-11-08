@@ -5,6 +5,7 @@ Utilities for tests.
 Original source: https://github.com/dmyersturnbull/tyrannosaurus
 Copyright 2020–2021 Douglas Myers-Turnbull
 """
+
 # NOTE: If you modify this file, you should indicate your license and copyright as well.
 from __future__ import annotations
 import logging
@@ -19,7 +20,6 @@ from datetime import datetime
 from pathlib import Path, PurePath
 from typing import Generator, Union
 from warnings import warn
-
 
 # Keeps created temp files; turn on for debugging
 KEEP = False
