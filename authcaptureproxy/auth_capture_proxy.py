@@ -3,9 +3,9 @@
 
 import asyncio
 import logging
-import posixpath
 import re
 from functools import partial
+from html import escape, unescape
 from json import JSONDecodeError
 from ssl import SSLContext
 from typing import Any, Callable, Dict, List, Optional, Set, Text, Tuple, Union
@@ -684,7 +684,6 @@ class AuthCaptureProxy:
             # Resolve relative form actions BEFORE modifiers run.
             if text and content_type == "text/html" and resp and resp.url:
                 _resp_url = URL(str(resp.url))
-                _resp_dir = _resp_url.path.rsplit("/", 1)[0] + "/" if "/" in _resp_url.path else "/"
 
                 def _resolve_form_action(form_match):
                     """Resolve relative action URLs only inside <form> tags."""
@@ -696,10 +695,13 @@ class AuthCaptureProxy:
                     if action and not action.startswith(
                         ("http://", "https://", "//", "#", "javascript:", "/")
                     ):
-                        resolved_path = posixpath.normpath(_resp_dir + action)
+                        resolved_url = _resp_url.join(URL(unescape(action)))
                         _proxy_base = self.access_url().path.rstrip("/")
                         abs_url = str(
-                            self.access_url().with_path(_proxy_base + resolved_path).with_query({})
+                            self.access_url()
+                            .with_path(_proxy_base + resolved_url.path)
+                            .with_query(resolved_url.query)
+                            .with_fragment(resolved_url.fragment)
                         )
                         _LOGGER.debug(
                             "Resolved relative form action '%s' -> '%s' (page: %s)",
@@ -707,7 +709,11 @@ class AuthCaptureProxy:
                             abs_url,
                             _resp_url.path,
                         )
-                        return form_tag[: action_m.start(2)] + abs_url + form_tag[action_m.end(2) :]
+                        return (
+                            form_tag[: action_m.start(2)]
+                            + escape(abs_url, quote=True)
+                            + form_tag[action_m.end(2) :]
+                        )
                     return form_tag
 
                 text = re.sub(
