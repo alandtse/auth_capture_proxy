@@ -38,11 +38,11 @@ def print_resp(resp: Union[httpx.Response, ClientResponse]) -> None:
     method = resp.request.method
     status = resp.status_code
     reason = resp.reason_phrase
-    headers = dict(resp.request.headers)
+    headers: Dict[str, Any] = dict(resp.request.headers)
     cookies = {}
     if headers.get("cookie"):
         cookie: SimpleCookie = SimpleCookie()
-        cookie.load(headers.get("cookie"))
+        cookie.load(headers["cookie"])
         for key, morsel in cookie.items():
             cookies[key] = morsel.value
         headers["cookie"] = cookies
@@ -73,11 +73,11 @@ def print_resp_aiohttp(resp: ClientResponse) -> None:
     method = resp.request_info.method
     status = resp.status
     reason = resp.reason
-    headers = dict(resp.request_info.headers)
+    headers: Dict[str, Any] = dict(resp.request_info.headers)
     cookies = {}
     if headers.get("Cookie"):
         cookie: SimpleCookie = SimpleCookie()
-        cookie.load(headers.get("Cookie"))
+        cookie.load(headers["Cookie"])
         for key, morsel in cookie.items():
             cookies[key] = morsel.value
         headers["Cookie"] = cookies
