@@ -119,7 +119,7 @@ async def proxy_example(
                 "autofill": partial(
                     autofill,
                     {
-                        "password": "CHANGEME",
+                        "password": "CHANGEME",  # nosec B105: Example autofill placeholder.
                     },
                 )
             }

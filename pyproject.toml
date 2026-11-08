@@ -18,17 +18,17 @@ classifiers = [
     "Development Status :: 3 - Alpha",
     "Natural Language :: English",
     "Programming Language :: Python :: 3 :: Only",
-    "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
     "Intended Audience :: Developers",
     "Operating System :: OS Independent",
     "Environment :: Console",
     "Topic :: Software Development :: Libraries :: Python Modules",
 ]
 keywords = [""]
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 dependencies = [
     "typer>=0.3, <1.0",
     "aiohttp>=3.0.0, <4.0.0",
@@ -90,7 +90,7 @@ align = true
 [tool.tyrannosaurus.sources]
 pycompatversions = "project.dependencies"
 pytoxversions = "project.dependencies"
-pymetaversion = "'3.9'"
+pymetaversion = "'3.11'"
 metavm = "'ubuntu-latest'"
 devdeps = "tool.poetry.group.dev.dependencies"
 status = "'Development'"
@@ -147,9 +147,11 @@ filename = "NEWS.md"
 [tool.semantic_release]
 version_toml = ["pyproject.toml:project.version"]
 major_on_zero = true
-upload_to_pypi = true
-upload_to_vcs_release = true
+assets = ["poetry.lock"]
 build_command = "pip install poetry && poetry lock && poetry build"
+
+[tool.semantic_release.publish]
+upload_to_vcs_release = true
 
 [tool.semantic_release.branches.main]
 match = "(main|master)"
@@ -168,7 +170,7 @@ show_missing = true
 
 [tool.black]
 line-length = 100
-target-version = ["py38"]
+target-version = ["py311"]
 
 [tool.isort]
 line_length = 100

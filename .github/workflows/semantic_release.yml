@@ -1,0 +1,44 @@
+name: semantic_release
+
+# Releases are independent of the tox matrix in push-main.yml so a flaky or
+# unsupported-interpreter test job can no longer block a release (the last two
+# main pushes were skipped that way). Mirrors alandtse/alexa_media_player.
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+concurrency:
+  group: semantic_release
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: main
+          token: ${{ secrets.GH_TOKEN }}
+      - name: Setup Git
+        run: |
+          git config --global user.name "semantic-release"
+          git config --global user.email "semantic-release@GitHub"
+      - name: Python Semantic Release
+        id: release
+        uses: python-semantic-release/python-semantic-release@v10.7.0
+        with:
+          github_token: ${{ secrets.GH_TOKEN }}
+          commit: true
+          push: true
+      - name: Publish to PyPI
+        if: steps.release.outputs.released == 'true'
+        uses: pypa/gh-action-pypi-publish@v1.14.3
+        with:
+          password: ${{ secrets.PYPI_TOKEN }}
