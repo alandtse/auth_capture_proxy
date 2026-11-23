@@ -37,14 +37,14 @@ repos:
       - id: commitizen
         stages: ["commit-msg"]
     repo: https://github.com/commitizen-tools/commitizen
-    rev: v4.19.3
+    rev: v4.20.0
 
   # --- Strip output from .ipynb files ---
   - hooks:
       - id: nbstripout
         files: ".ipynb"
     repo: https://github.com/kynan/nbstripout
-    rev: 0.9.1
+    rev: 0.9.2
 
   # --- Linters ---
   - hooks:
